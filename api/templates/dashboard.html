@@ -1,0 +1,185 @@
+<html>
+  <head>
+    <title>Scrapyard Silicon Valley</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="https://scrapyard.hackclub.com/favicon.png"
+    />
+    <meta content="#477B78" name="theme-color" />
+    <meta content="Scrapyard Silicon Valley" name="og:title" />
+    <meta
+      content="Scrapyard Silicon Valley is a 24-hour hardware-focused hackathon for high school students happening in the Bay Area."
+      name="og:description"
+    />
+    <meta
+      content="https://cdn.hackclubber.dev/slackcdn/f2523478b361603460984f275fa311d6.png"
+      name="og:image"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta content="https://scrapyard.dev/" name="og:url" />
+    <link rel="stylesheet" href="https://use.typekit.net/pkf4twy.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Galindo&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/index.css" />
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  </head>
+  <body>
+    <div class="background"></div>
+    <!-- <a href="/"> -->
+    <img
+      src="https://cdn.hack.pet/slackcdn/df1288fdda61fc585ea2f48478f1d5a7.png"
+      class="logo"
+      style="cursor: pointer"
+    />
+    <!-- </a> -->
+    <div class="nav">
+      <a href="/dashboard" to="dashboard" class="nav-item">Dashboard</a>
+      <a href="/dashboard/meal-form" to="meal-form" class="nav-item"
+        >Meal Form</a
+      >
+      <!-- <a href="/dashboard/vote" to="vote" class="nav-item">Vote</a> -->
+      <a href="https://scrapyard.dev/" class="nav-link" target="_blank"
+        >Scrapper</a
+      >
+      <a href="/logout" class="nav-link">Logout</a>
+      {{ admin_nav | safe }}
+    </div>
+    <div class="container-container">
+      <div class="container2">
+        <div class="container" id="dashboard">
+          <h1>Hello <span class="name">there</span>!</h1>
+          <p>
+            Your current waitlist status is
+            <span class="status">loading...</span>.
+          </p>
+          <p id="message"></p>
+          <p id="meal-msg"></p>
+          <div>
+            <a class="link" href="/dashboard/meal-form">
+              <span></span>
+              <span>Meal Form</span>
+            </a>
+            <a
+              class="link"
+              href="https://discord.gg/32BsffvEf4"
+              target="_blank"
+            >
+              <span></span>
+              <span>Discord Server</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="container2">
+        <div class="container" id="meal-form">
+          <h1>Meal Form</h1>
+          <p>
+            Note: We are unable to guarantee your first choice for meal options.
+            If an item has very little demand, we might not provide it. We will
+            try our best to accommodate your dietary restrictions.
+          </p>
+          <p>
+            Please do not waste food! Only fill this out if you are 100% sure
+            you will be able to attend. If you aren't attending the full
+            duration, you may specify that you will not be eating at a certain
+            meal.
+          </p>
+          <form id="mealFormContainer">
+            <!-- Form will be populated by JavaScript -->
+          </form>
+          <a onclick="saveMealForm()" class="btn">Save Meal Form</a>
+          <script src="/static/meal-form.js"></script>
+        </div>
+      </div>
+      <div class="container2">
+        <div class="container" id="polls">
+          <h1>Polls</h1>
+          <script src="/static/polls.js"></script>
+        </div>
+      </div>
+    </div>
+  </body>
+  <!-- Load core scripts first -->
+  <script src="/static/dashboard.js"></script>
+  <script src="/static/polls.js"></script>
+  <script src="/static/meal-form.js"></script>
+
+  <!-- Initialize panels -->
+  <script>
+    const panelId = "{{ panel_id }}";
+    if (panelId) {
+      window.addEventListener("load", () => {
+        switchPanel(panelId, false);
+      });
+    }
+  </script>
+  <script>
+    function getSessionCookie() {
+      const cookies = document.cookie.split("; ");
+      for (let cookie of cookies) {
+        let [name, value] = cookie.split("=");
+        if (name === "session") {
+          return value;
+        }
+      }
+      return null;
+    }
+
+    let clickCount = 0;
+    document.querySelector(".logo").addEventListener("click", () => {
+      clickCount++;
+      if (clickCount == 4) {
+        Toastify({
+          text: "You feel a sudden urge to log out and spam click the logo on the homepage...",
+          duration: -1,
+          gravity: "bottom",
+          position: "right",
+          style: {},
+          close: true,
+        }).showToast();
+      }
+      if (clickCount == 10) {
+        Toastify({
+          text: "<a href='/logout'>logout</a>, then spam click the logo on the homepage...",
+          duration: -1,
+          gravity: "bottom",
+          position: "right",
+          style: {},
+          close: true,
+        }).showToast();
+      }
+      if (clickCount == 20) {
+        Toastify({
+          text: "why????",
+          duration: -1,
+          gravity: "bottom",
+          position: "right",
+          style: {},
+          close: true,
+        }).showToast();
+      }
+      if (clickCount == 1000) {
+        Toastify({
+          text: "congratulations! you win... nothing!",
+          duration: -1,
+          gravity: "bottom",
+          position: "right",
+          style: {},
+          close: true,
+        }).showToast();
+      }
+    });
+  </script>
+</html>

@@ -1,0 +1,8 @@
+env/
+.env
+fetch_data.py
+manual_update.py
+output
+output.json
+__pycache__/
+flask_session/

@@ -1,0 +1,59 @@
+<html>
+  <head>
+    <title>Scrapyard Verification</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="https://scrapyard.hackclub.com/favicon.png"
+    />
+    <meta content="#477B78" name="theme-color" />
+    <meta content="Scrapyard Discord Verification" name="og:title" />
+    <meta
+      content="Link your Discord account to your Scrapyard signup to gain access to send messages in the server."
+      name="og:description"
+    />
+    <meta
+      content="https://cdn.hackclubber.dev/slackcdn/f2523478b361603460984f275fa311d6.png"
+      name="og:image"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta content="https://verify.scrapyard.dev/" name="og:url" />
+    <link rel="stylesheet" href="https://use.typekit.net/pkf4twy.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Galindo&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/index.css" />
+  </head>
+  <body>
+    <div class="background"></div>
+    <img
+      src="https://cdn.hack.pet/slackcdn/df1288fdda61fc585ea2f48478f1d5a7.png"
+      class="logo"
+      style="cursor: pointer"
+    />
+    <div class="container2">
+      <div class="container">
+        <h1>Discord Verification</h1>
+        <p>
+          Link your Discord account to your Scrapyard Silicon Valley signup to
+          gain access to send messages in the server.
+        </p>
+        <p>
+          For the sign in with Google step, use the email you used to sign up
+          for Scrapyard.
+        </p>
+        <p>Your Discord email does not matter.</p>
+        <a href="/discord/login" class="btn">Start Verification</a><br />
+        {% if 'user_id' in session %}
+        <a href="/dashboard" class="link">
+          <span></span>
+          <span>← Back to Dashboard</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>

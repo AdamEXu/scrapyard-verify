@@ -1,0 +1,75 @@
+<html>
+  <head>
+    <title>Scrapyard Silicon Valley</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="https://scrapyard.hackclub.com/favicon.png"
+    />
+    <meta content="#477B78" name="theme-color" />
+    <meta content="Scrapyard Silicon Valley" name="og:title" />
+    <meta
+      content="Scrapyard Silicon Valley is a 24-hour hardware-focused hackathon for high school students happening in the Bay Area."
+      name="og:description"
+    />
+    <meta
+      content="https://cdn.hackclubber.dev/slackcdn/f2523478b361603460984f275fa311d6.png"
+      name="og:image"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta content="https://scrapyard.dev/" name="og:url" />
+    <link rel="stylesheet" href="https://use.typekit.net/pkf4twy.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Galindo&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/index.css" />
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  </head>
+  <body>
+    <div class="background"></div>
+    <img
+      src="https://cdn.hack.pet/slackcdn/df1288fdda61fc585ea2f48478f1d5a7.png"
+      class="logo"
+      style="cursor: pointer"
+    />
+    <div class="container">
+      <h1>Scrapyard Silicon Valley</h1>
+      <p>
+        If you are looking for your Scrapyard ID dashboard, login with the
+        button below. If you're looking for the scrapper, leaderboard, shop, or
+        anything relating to scraps and bits, click the link to go to the
+        attendee dashboard.
+      </p>
+      <a href="/login" class="btn">Scrapyard ID Login</a><br />
+      <a href="https://scrapyard.dev" class="link">
+        <span></span>
+        <span>Attendee Dashboard →</span>
+      </a>
+    </div>
+  </body>
+  <script>
+    tippy(".logo", {
+      content: "You're already here! No need to click me...",
+      placement: "bottom",
+    });
+
+    // if user clicks on logo 20 times, redirect to never gonna give you up
+    let clickCount = 0;
+    document.querySelector(".logo").addEventListener("click", () => {
+      clickCount++;
+      if (clickCount >= 4) {
+        window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+      }
+    });
+  </script>
+</html>

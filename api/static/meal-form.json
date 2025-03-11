@@ -1,0 +1,196 @@
+{
+  "name": "Meal Form",
+  "sections": [
+    {
+      "name": "Breakfast (Sunday)",
+      "id": "sunday-breakfast",
+      "optional": true,
+      "fields": [
+        {
+          "name": "Donuts?",
+          "description": "You want breakfast on Saturday? Krispy Kreme donuts. Unfortunately, we cannot accomodate dietary restrictions for this at this time. Sorry!",
+          "id": "donuts",
+          "type": "select",
+          "options": [
+            {
+              "name": "Yes",
+              "value": "yes"
+            },
+            {
+              "name": "No",
+              "value": "no"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Lunch (Saturday)",
+      "id": "saturday-lunch",
+      "optional": true,
+      "fields": [
+        {
+          "name": "Pizza",
+          "description": "If you don't know what pizza is...",
+          "id": "pizza",
+          "type": "select",
+          "optional": true,
+          "options": [
+            {
+              "name": "Cheese",
+              "description": "A classic. Not vegan cheese.",
+              "value": "cheese",
+              "image": "https://adoraimages.blob.core.windows.net/content/pizzamyheart/items/item107-775.jpeg"
+            },
+            {
+              "name": "Pepperoni",
+              "description": "Has pepperoni on it. I don't know what else to tell you. Probably not vegan.",
+              "value": "pepperoni",
+              "image": "https://adoraimages.blob.core.windows.net/content/pizzamyheart/items/item2-802.jpeg"
+            },
+            {
+              "name": "Hawaiian",
+              "description": "Pineapple and ham. The haters hate it. Idk what your opinion is but it's here if you want it...",
+              "value": "hawaiian",
+              "image": "https://adoraimages.blob.core.windows.net/content/pizzamyheart/items/item11-912.jpeg"
+            },
+            {
+              "name": "BBQ Chicken",
+              "description": "Adam's favorite",
+              "value": "bbq-chicken",
+              "image": "https://adoraimages.blob.core.windows.net/content/pizzamyheart/items/item14-803.jpeg"
+            },
+            {
+              "name": "Veggie (V)",
+              "description": "Vegan cheese + Tomatoes, Olives, Bells, Mushrooms, Artichoke, Red Onion. Vegan option.",
+              "value": "veggie",
+              "image": "https://adoraimages.blob.core.windows.net/content/pizzamyheart/items/item31-175.jpeg"
+            },
+            {
+              "name": "Gluten Free Cheese (G & V)",
+              "description": "Not only is it gluten free, but it's also vegan! Just a gluten free vegan cheese pizza.",
+              "value": "gluten-free",
+              "image": "https://adoraimages.blob.core.windows.net/content/pizzamyheart/items/item107-775.jpeg"
+            },
+            {
+              "name": "No Thanks!",
+              "description": "I'll be skipping lunch on Saturday.",
+              "value": "skip",
+              "image": "https://png.pngtree.com/png-vector/20230311/ourmid/pngtree-skip-ad-button-transparent-video-vector-png-image_6645029.png"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dinner (Saturday)",
+      "id": "saturday-dinner",
+      "optional": true,
+      "fields": [
+        {
+          "name": "iniBurger Burger",
+          "description": "Gourmet burgers. I think they taste good.",
+          "id": "iniburger",
+          "type": "select",
+          "optional": true,
+          "options": [
+            {
+              "name": "Americano",
+              "description": "1/4 lb Angus Beef, ini Sauce, american cheese, lettuce, tomato, pickles, onions.",
+              "value": "americano",
+              "image": "https://atlas-s3-proxy.revelup.com/product/iniburger/a70e8e2478de9479a85073bed595ce48b08d0992beabbf809b6bbfc4596a65564f0c34cb6143540c6da3cc007a591db02543d2972651186de765a948921c6008.png"
+            },
+            {
+              "name": "Western",
+              "description": "1/4 lb Angus beef, BBQ sauce, cheddar cheese, turkey bacon, onion ring.",
+              "value": "western",
+              "image": "https://atlas-s3-proxy.revelup.com/product/iniburger/fc3e69ac4423cd8ae86bee67c89f7cb587c37c68ffb36623575e179eb10d9cf7a6dca2ccd0a4e332fe8d1cd2e9360cf5b006c280c85d72179d7f545e437d9d0c.png"
+            },
+            {
+              "name": "Mexicali",
+              "description": "1/4 lb Angus beef, ini Spicy sauce, pepper jack, lettuce, tomato, jalapeno.",
+              "value": "mexicali",
+              "image": "https://atlas-s3-proxy.revelup.com/product/iniburger/cc83bf13323bf56b5c604aea9c681fe8ac89b3a59ab8b0dcfc779369937f8396b6b464b61c1767b7236b4c946fe43b7bd7fbb4aea83597238462aaeff857f2da.png"
+            },
+            {
+              "name": "Hawaiian Spice",
+              "description": "1/4 lb Angus beef, ini Spicy sauce, cheddar cheese, lettuce, tomato, pineapple, jalapeno.",
+              "value": "hawaiian-spice",
+              "image": "https://atlas-s3-proxy.revelup.com/product/iniburger/162032c8a4c358833575159da4b5bccb07b31d919f43cc3b32d4fec67fe90bfb7f31cc4b4557e51365001c91e9a5bc954f88535a041c753a1305144b3123699b.png"
+            },
+            {
+              "name": "Mushroom",
+              "description": "1/4 lb Angus beef, ini Sauce, swiss cheese, lettuce, grilled onions, grilled mushrooms.",
+              "value": "mushroom",
+              "image": "https://atlas-s3-proxy.revelup.com/product/iniburger/409ff49a328271fbcd95bfdf176d81ae41f698e13e0dcded8c82c1406649bca4d6fb29bf91246aa1d75b908fc167454b38c75dfa0f75600b2c87d18d648f6c3e.png"
+            },
+            {
+              "name": "Malibu Chicken",
+              "description": "Grilled chicken, ini Sauce, swiss cheese, lettuce, tomato, avocado.",
+              "value": "malibu-chicken",
+              "image": "https://atlas-s3-proxy.revelup.com/product/iniburger/b5900fe3331ee91a5625e5fc77b7ae7240a11306aa1fb88d6faddc0fef29a933b189a5476d54aad9b75078d1d86453d1f5dcdc53ecbbfe7b0af8417a7baf9c04.png"
+            },
+            {
+              "name": "Crispy Chicken",
+              "description": "Crispy chicken, ini Sauce, american cheese, lettuce, tomato, onions, pickles.",
+              "value": "crispy-chicken",
+              "image": "https://atlas-s3-proxy.revelup.com/product/iniburger/87082f91f2a3aa56b1d4a84f379e605b6288cb11ccb80ef1483fecb48488fccaf64b173aaa831c90bab2b9b52a1166aefb356af17efca561d872e745eadd3ee1.png"
+            },
+            {
+              "name": "Gardenburger (V)",
+              "description": "Vegetarian Garden patty, ini Sauce, cheddar cheese, lettuce, tomato, grilled onions, avocado.",
+              "value": "gardenburger",
+              "image": "https://atlas-s3-proxy.revelup.com/product/iniburger/01217f905d10cda695409c8feeb22b19955d37d55d3020a63e073ed3d60d3326df47a9c6f92a90e8149466a4e626428aaf560d970f1ab4036059c0f3f69d574b.png"
+            },
+            {
+              "name": "Falafel Malibu (V)",
+              "description": "Vegetarian Falafel, ini Sauce, swiss cheese, lettuce, tomato, avocado.",
+              "value": "falafel-malibu",
+              "image": "https://atlas-s3-proxy.revelup.com/product/iniburger/2e245733f7c8b1479d4b9521838769fac197f2d1b53a20dcdd1c6f01fc2fd307fb343e46eb2625534f9c2682b2ac3d965fcdd62ac7523e9ae42f6119848d48aa.jpeg"
+            },
+            {
+              "name": "No Thanks!",
+              "description": "I'll be skipping lunch on Saturday.",
+              "value": "skip",
+              "image": "https://png.pngtree.com/png-vector/20230311/ourmid/pngtree-skip-ad-button-transparent-video-vector-png-image_6645029.png"
+            }
+          ]
+        },
+        {
+          "name": "Dietary Restrictions for iniBurger",
+          "description": "Check all that apply, but only if you want it. Please read and don't just check them all. You get what you order.",
+          "id": "dietary-restrictions",
+          "type": "select-multiple",
+          "optional": true,
+          "options": [
+            {
+              "name": "Gluten Free (G)",
+              "description": "No bun, lettuce wrap instead",
+              "value": "gluten-free"
+            },
+            {
+              "name": "Lactose Intolerant (L)",
+              "description": "No cheese in burger",
+              "value": "lactose-intolerant"
+            }
+          ]
+        },
+        {
+          "name": "Side",
+          "description": "Choose wisely. This is a really hard decision.",
+          "id": "side",
+          "type": "select",
+          "optional": true,
+          "options": [
+            {
+              "name": "Fries (V)",
+              "description": "Potato + Oil + Heat = Fries. I think they're vegan.",
+              "value": "fries",
+              "image": "https://atlas-s3-proxy.revelup.com/product/iniburger/45c54009eeb3aaebff3b912d401b7c1200023aa58fe4080c6e601e1c1f0747512444fb75d478fe7a953ed63cf50edeea93e72d5b74737249cf73e4e4a448515c.png"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

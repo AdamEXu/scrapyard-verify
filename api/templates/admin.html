@@ -1,0 +1,448 @@
+<html>
+  <head>
+    <title>Admin Panel - Scrapyard Silicon Valley</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="https://scrapyard.hackclub.com/favicon.png"
+    />
+    <meta content="#477B78" name="theme-color" />
+    <meta content="Admin Panel" name="og:title" />
+    <meta
+      content="Link your Discord account to your Scrapyard signup to gain access to send messages in the server."
+      name="og:description"
+    />
+    <meta
+      content="https://cdn.hackclubber.dev/slackcdn/f2523478b361603460984f275fa311d6.png"
+      name="og:image"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta content="https://verify.scrapyard.dev/" name="og:url" />
+    <link rel="stylesheet" href="https://use.typekit.net/pkf4twy.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Galindo&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/index.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  </head>
+  <body>
+    <div class="background"></div>
+    <img
+      src="https://cdn.hack.pet/slackcdn/df1288fdda61fc585ea2f48478f1d5a7.png"
+      class="logo"
+      style="cursor: pointer"
+    />
+    <div class="container2">
+      <div class="container">
+        <h1>Admin Panel</h1>
+        <h2>Attendees</h2>
+        <table id="attendees">
+          <tr>
+            <th>ID</th>
+            <th>(Preferred) Name</th>
+            <th>Legal Name</th>
+            <th>Email</th>
+            <th>Discord ID</th>
+            <th>Pronouns</th>
+            <th>Meal Form</th>
+            <th>Waitlist Status</th>
+            <th>Actions</th>
+          </tr>
+        </table>
+        <script>
+          var attendees = [];
+          fetch("/api/get-attendees")
+            .then((response) => response.json())
+            .then((data) => {
+              attendees = data;
+              const table = document.getElementById("attendees");
+              data.forEach((attendee) => {
+                const row = table.insertRow();
+                const cell1 = row.insertCell(0);
+                const cell2 = row.insertCell(1);
+                const cell3 = row.insertCell(2);
+                const cell4 = row.insertCell(3);
+                const cell5 = row.insertCell(4);
+                const cell6 = row.insertCell(5);
+                const cell7 = row.insertCell(6);
+                const cell8 = row.insertCell(7);
+                const cell9 = row.insertCell(8);
+
+                cell1.innerHTML = attendee.id;
+                cell2.innerHTML = attendee.preferredName;
+                // cell3.innerHTML = "";
+                cell3.innerHTML = attendee.fullName;
+                // cell4.innerHTML = "";
+                cell4.innerHTML = attendee.email;
+                cell5.innerHTML = attendee.organizerNotes.discord || "";
+                cell6.innerHTML = attendee.pronouns;
+                // cell7.innerHTML = ;
+                // if submitted, show checkmark
+                cell7.innerHTML = attendee.organizerNotes.mealForm ? "✓" : "";
+                cell7.style.color = attendee.organizerNotes.mealForm
+                  ? "#5cffd1"
+                  : "#f44336";
+                cell8.innerHTML = attendee.organizerNotes.waitlist || "pending";
+                if (attendee.organizerNotes.waitlist === "rejected") {
+                  cell8.style.color = "#f44336";
+                } else if (attendee.organizerNotes.waitlist === "approved") {
+                  cell8.style.color = "#5cffd1";
+                }
+
+                // Only show action buttons for pending waitlist status
+                if (
+                  (attendee.organizerNotes.waitlist || "pending") === "pending"
+                ) {
+                  const approveBtn = document.createElement("button");
+                  approveBtn.innerHTML = "Approve";
+                  approveBtn.style.marginRight = "10px";
+                  approveBtn.addEventListener("click", () => {
+                    fetch("/api/waitlist/approve", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        attendee_id: attendee.id,
+                      }),
+                    })
+                      .then((response) => response.json())
+                      .then((data) => {
+                        if (data.success) {
+                          cell8.innerHTML = "approved";
+                          cell8.style.color = "#5cffd1";
+                          cell9.innerHTML = "";
+                        }
+                      });
+                  });
+
+                  const rejectBtn = document.createElement("button");
+                  rejectBtn.innerHTML = "Reject";
+                  rejectBtn.addEventListener("click", () => {
+                    const reason = prompt("Reason for rejection:");
+                    if (reason) {
+                      fetch("/api/waitlist/reject", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          attendee_id: attendee.id,
+                          reason: reason,
+                        }),
+                      })
+                        .then((response) => response.json())
+                        .then((data) => {
+                          if (data.success) {
+                            cell8.innerHTML = "rejected";
+                            cell8.style.color = "#f44336";
+                            cell9.innerHTML = "";
+                          }
+                        });
+                    }
+                  });
+
+                  cell9.appendChild(approveBtn);
+                  cell9.appendChild(rejectBtn);
+                }
+              });
+            });
+        </script>
+        <div>
+          <h2>Statistics</h2>
+          <p>Number of attendees: {{ num_attendees }}</p>
+          <p>Number of waitlisted attendees: {{ num_waitlisted }}</p>
+          <p>Number of approved attendees: {{ num_approved }}</p>
+        </div>
+        <div>
+          <h2>Randomly Approve Waitlist</h2>
+          <form onsubmit="return false;">
+            <input
+              type="number"
+              id="numToApprove"
+              placeholder="Number to approve"
+            />
+            <button onclick="approveRandomly()">Approve</button>
+            <p id="result"></p>
+            <script>
+              function approveRandomly() {
+                const numToApprove =
+                  document.getElementById("numToApprove").value;
+                fetch("/api/waitlist/approve-random", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    numToApprove: numToApprove,
+                  }),
+                })
+                  .then((response) => response.json())
+                  .then((data) => {
+                    document.getElementById("result").innerHTML = data.message;
+                  });
+              }
+            </script>
+          </form>
+      </div>
+      <!-- table with referrals -->
+      <h2>Referrals</h2>
+      <table id="referrals">
+        <tr>
+          <th>Referral Code</th>
+          <th>Emails</th>
+          <th>Status</th>
+        </tr>
+      </table>
+      <script>
+        fetch("/api/list_referrals")
+          .then((response) => response.json())
+          .then((data) => {
+            const table = document.getElementById("referrals");
+            for (const [signupId, referralData] of Object.entries(data)) {
+              const row = table.insertRow();
+              const cell1 = row.insertCell(0);
+              const cell2 = row.insertCell(1);
+              const cell3 = row.insertCell(2);
+
+              cell1.innerHTML = signupId;
+
+              // Create unordered list for emails
+              const emailList = document.createElement("ul");
+              emailList.style.listStyle = "none";
+              emailList.style.padding = "0";
+              emailList.style.margin = "0";
+
+              for (const email of referralData.refers) {
+                const listItem = document.createElement("li");
+                listItem.style.marginBottom = "5px";
+                listItem.style.display = "flex";
+                listItem.style.alignItems = "center";
+                listItem.style.gap = "10px";
+
+                // Create email span
+                const emailSpan = document.createElement("span");
+                emailSpan.textContent = email;
+
+                // Create status indicator
+                const statusSpan = document.createElement("span");
+                const isSignedUp = referralData.signed_up[email];
+                statusSpan.textContent = isSignedUp ? "✓" : "✗";
+                statusSpan.style.color = isSignedUp ? "#5cffd1" : "#f44336";
+                statusSpan.style.fontWeight = "bold";
+
+                // Create delete button
+                const deleteBtn = document.createElement("button");
+                deleteBtn.innerHTML = "×";
+                deleteBtn.style.marginLeft = "auto";
+                deleteBtn.style.padding = "0 5px";
+                deleteBtn.style.cursor = "pointer";
+                deleteBtn.style.border = "none";
+                deleteBtn.style.borderRadius = "3px";
+                deleteBtn.style.backgroundColor = "#ff4444";
+                deleteBtn.style.color = "white";
+
+                deleteBtn.addEventListener("click", () => {
+                  if (
+                    confirm(
+                      `Are you sure you want to delete the referral for ${email}?`
+                    )
+                  ) {
+                    fetch("/api/remove_referral", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        signup_id: signupId,
+                        email: email,
+                      }),
+                    }).then((response) => {
+                      if (response.ok) {
+                        listItem.remove();
+                        if (emailList.children.length === 0) {
+                          row.remove();
+                        }
+                      }
+                    });
+                  }
+                });
+
+                listItem.appendChild(emailSpan);
+                listItem.appendChild(statusSpan);
+                listItem.appendChild(deleteBtn);
+                emailList.appendChild(listItem);
+              }
+
+              cell2.appendChild(emailList);
+
+              // Add total count and signup status
+              const totalSignedUp = Object.values(
+                referralData.signed_up
+              ).filter(Boolean).length;
+              const statusSpan = document.createElement("span");
+              statusSpan.textContent = `${totalSignedUp}/${referralData.refers.length} signed up`;
+              statusSpan.style.color =
+                totalSignedUp > 0 ? "#5cffd1" : "#f44336";
+              cell3.appendChild(statusSpan);
+            }
+          });
+      </script>
+      <!-- table with meal form -->
+      <h2>Meal Form</h2>
+      <table id="meal-form">
+        <tr>
+          <th>ID</th>
+          <th>(Preferred) Name</th>
+          <th>Legal Name</th>
+          <th>Sunday Breakfast</th>
+          <th>Saturday Lunch Pizza</th>
+          <th>Saturday Dinner iniBurger</th>
+          <th>Saturday Dinner Dietary</th>
+          <th>Saturday Dinner Side</th>
+        </tr>
+      </table>
+      <script>
+        let cachedAttendees = null;
+
+        fetch("/api/get-attendees")
+          .then((response) => response.json())
+          .then((data) => {
+            cachedAttendees = data;
+            const table = document.getElementById("meal-form");
+            data.forEach((attendee) => {
+              const row = table.insertRow();
+              const cell1 = row.insertCell(0);
+              const cell2 = row.insertCell(1);
+              const cell3 = row.insertCell(2);
+              const cell4 = row.insertCell(3);
+              const cell6 = row.insertCell(4);
+              const cell7 = row.insertCell(5);
+              const cell8 = row.insertCell(6);
+              const cell9 = row.insertCell(7);
+
+              cell1.innerHTML = attendee.id;
+              cell2.innerHTML = attendee.preferredName || '';
+              cell3.innerHTML = attendee.fullName || '';
+
+              // Safely access meal form data with fallbacks
+              const mealForm = attendee.organizerNotes?.mealForm || {};
+              
+              // Sunday Breakfast
+              cell4.innerHTML = mealForm['sunday-breakfast']?.['donuts'] || '';
+              
+              // Saturday Lunch
+              cell6.innerHTML = mealForm['saturday-lunch']?.['pizza'] || '';
+              
+              // Saturday Dinner
+              cell7.innerHTML = mealForm['saturday-dinner']?.['iniburger'] || '';
+              cell8.innerHTML = (mealForm['saturday-dinner']?.['dietary-restrictions'] || []).join(', ');
+              cell9.innerHTML = mealForm['saturday-dinner']?.['side'] || '';
+            });
+          })
+          .catch(error => {
+            console.error('Error fetching attendees:', error);
+            const table = document.getElementById("meal-form");
+            const row = table.insertRow();
+            const cell = row.insertCell(0);
+            cell.colSpan = 9; // Updated colspan to match new number of columns
+            cell.innerHTML = 'Error loading meal form data';
+            cell.style.color = '#f44336';
+            cell.style.textAlign = 'center';
+          });
+      </script>
+      <h1>Meal Grabber By ID</h1>
+      <div class="meal-grabber-container">
+        <form id="meal-form-id">
+          <label for="attendee-id">Enter Attendee ID:</label>
+          <input type="text" id="attendee-id" name="attendee-id" required />
+          <button type="submit">Submit</button>
+        </form>
+        <div id="result"></div>
+      </div>
+      <script>
+        function showAttendeeInfo(attendeeId) {
+          if (!cachedAttendees) {
+            Toastify({
+              text: "Loading attendee data...",
+              duration: 3000,
+              close: true,
+              style: { background: "#333" }
+            }).showToast();
+            return;
+          }
+
+          const attendee = cachedAttendees.find(a => String(a.id) === String(attendeeId));
+          
+          if (attendee) {
+            const mealForm = attendee.organizerNotes?.mealForm || {};
+            
+            const mealInfo = `
+              ID: ${attendee.id}
+              Preferred Name: ${attendee.preferredName || 'N/A'}
+              Legal Name: ${attendee.fullName || 'N/A'}
+              Sunday Breakfast: ${mealForm['sunday-breakfast']?.['donuts'] || 'Not selected'}
+              Sunday Breakfast Dietary: ${(mealForm['sunday-breakfast']?.['dietary-restrictions'] || []).join(', ') || 'None'}
+              Saturday Lunch Pizza: ${mealForm['saturday-lunch']?.['pizza'] || 'Not selected'}
+              Saturday Dinner iniBurger: ${mealForm['saturday-dinner']?.['iniburger'] || 'Not selected'}
+              Saturday Dinner Dietary: ${(mealForm['saturday-dinner']?.['dietary-restrictions'] || []).join(', ') || 'None'}
+              Saturday Dinner Side: ${mealForm['saturday-dinner']?.['side'] || 'Not selected'}
+            `;
+            
+            Toastify({
+              text: mealInfo,
+              duration: 10000,
+              close: true,
+              style: {
+                background: "#333",
+                whiteSpace: "pre-line"
+              }
+            }).showToast();
+
+            // Clear the input field after successful scan
+            document.getElementById('attendee-id').value = '';
+          } else {
+            Toastify({
+              text: "No data found for the given ID",
+              duration: 3000,
+              close: true,
+              style: { background: "#f44336" }
+            }).showToast();
+          }
+        }
+
+        // Handle form submission
+        document.getElementById('meal-form-id').addEventListener('submit', function(event) {
+          event.preventDefault();
+          const attendeeId = document.getElementById('attendee-id').value.trim();
+          showAttendeeInfo(attendeeId);
+        });
+
+        // Handle barcode scanner input
+        document.getElementById('attendee-id').addEventListener('keypress', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent form submission
+            const attendeeId = event.target.value.trim();
+            showAttendeeInfo(attendeeId);
+          }
+        });
+
+        // Auto-focus the input field
+        document.getElementById('attendee-id').focus();
+        
+        // Remove the onclick handler that was keeping focus
+        // document.addEventListener('click', function() {
+        //   document.getElementById('attendee-id').focus();
+        // });
+      </script>
+    </div>
+  </body>
+</html>
