@@ -2,7 +2,7 @@
   "name": "Meal Form",
   "sections": [
     {
-      "name": "Breakfast (Sunday)",
+      "name": "Breakfast (Saturday)",
       "id": "sunday-breakfast",
       "optional": true,
       "fields": [

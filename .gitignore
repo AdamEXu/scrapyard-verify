@@ -6,3 +6,5 @@ output
 output.json
 __pycache__/
 flask_session/
+emails.csv
+email-json.py
