@@ -127,9 +127,12 @@
               });
             });
 
-          // Add event listeners for approve buttons
+          // Add event listeners for approve and resend buttons
           document.addEventListener("click", function (event) {
             if (event.target.classList.contains("approve-btn")) {
+              const attendeeId = event.target.getAttribute("data-id");
+              approveAttendee(attendeeId, event.target);
+            } else if (event.target.classList.contains("resend-btn")) {
               const attendeeId = event.target.getAttribute("data-id");
               approveAttendee(attendeeId, event.target);
             }
@@ -154,15 +157,20 @@
               .then((response) => response.json())
               .then((data) => {
                 if (data.success) {
-                  if (originalText === "Send Info Again") {
-                    // Just show a success message without reloading
-                    alert(`Information email sent to ${data.attendee}`);
-                    buttonElement.disabled = false;
-                    buttonElement.textContent = originalText;
-                  } else {
-                    // Refresh the page to show updated status
-                    window.location.reload();
-                  }
+                  // Don't reload the page for either case, just show a toast
+                  Toastify({
+                    text:
+                      originalText === "Send Info Again"
+                        ? `Information email sent to ${data.attendee}`
+                        : `${data.attendee} has been approved`,
+                    duration: 3000,
+                    close: true,
+                    style: { background: "#5cffd1" },
+                  }).showToast();
+
+                  // Re-enable the button
+                  buttonElement.disabled = false;
+                  buttonElement.textContent = originalText;
                 } else {
                   alert(
                     "Error: " + (data.error || "Failed to process request")
@@ -196,8 +204,17 @@
               .then((response) => response.json())
               .then((data) => {
                 if (data.success) {
-                  // Refresh the page to show updated status
-                  window.location.reload();
+                  // Don't reload the page, just show a toast
+                  Toastify({
+                    text: `${data.attendee} has been rejected`,
+                    duration: 3000,
+                    close: true,
+                    style: { background: "#f44336" },
+                  }).showToast();
+
+                  // Re-enable the button
+                  buttonElement.disabled = false;
+                  buttonElement.textContent = "Reject";
                 } else {
                   alert(
                     "Error: " + (data.error || "Failed to reject attendee")
