@@ -4,7 +4,6 @@
     {
       "name": "Breakfast (Saturday)",
       "id": "sunday-breakfast",
-      "optional": true,
       "fields": [
         {
           "name": "Donuts?",

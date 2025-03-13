@@ -1,0 +1,627 @@
+<html>
+  <head>
+    <title>Meal Grabber - Scrapyard Silicon Valley</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="https://scrapyard.hackclub.com/favicon.png"
+    />
+    <meta content="#477B78" name="theme-color" />
+    <meta content="Meal Grabber" name="og:title" />
+    <meta
+      content="Meal Grabber for Scrapyard Silicon Valley"
+      name="og:description"
+    />
+    <meta
+      content="https://cdn.hackclubber.dev/slackcdn/f2523478b361603460984f275fa311d6.png"
+      name="og:image"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta content="https://verify.scrapyard.dev/" name="og:url" />
+    <link rel="stylesheet" href="https://use.typekit.net/pkf4twy.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Galindo&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/index.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  </head>
+  <body>
+    <div class="background"></div>
+    <img
+      src="https://cdn.hack.pet/slackcdn/df1288fdda61fc585ea2f48478f1d5a7.png"
+      class="logo"
+      style="cursor: pointer"
+    />
+    <div class="container2">
+      <div class="container">
+        <h1>Meal Grabber</h1>
+        <p>Scan attendee badges to quickly check their meal preferences.</p>
+
+        <div class="meal-grabber-container">
+          <form id="meal-form-id">
+            <label for="attendee-id">Scan Attendee Badge:</label>
+            <input
+              type="text"
+              id="attendee-id"
+              name="attendee-id"
+              required
+              autofocus
+            />
+            <button type="submit">Submit</button>
+          </form>
+          <div id="result"></div>
+        </div>
+
+        <div id="meal-info-display" class="meal-info-display">
+          <!-- Meal information will be displayed here -->
+        </div>
+
+        <div class="navigation-links">
+          <a href="/admin" class="link">
+            <span></span>
+            <span>← Back to Admin Panel</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let cachedAttendees = null;
+
+      // Fetch attendee data when the page loads
+      fetch("/api/get-attendees")
+        .then((response) => response.json())
+        .then((data) => {
+          cachedAttendees = data;
+          console.log("Attendee data loaded");
+        })
+        .catch((error) => {
+          console.error("Error loading attendee data:", error);
+          Toastify({
+            text: "Error loading attendee data. Please refresh the page.",
+            duration: 3000,
+            close: true,
+            style: { background: "#f44336" },
+          }).showToast();
+        });
+
+      function showAttendeeInfo(attendeeId) {
+        if (!cachedAttendees) {
+          Toastify({
+            text: "Loading attendee data...",
+            duration: 3000,
+            close: true,
+            style: { background: "#333" },
+          }).showToast();
+          return;
+        }
+
+        const attendee = cachedAttendees.find(
+          (a) => String(a.id).toLowerCase() === String(attendeeId).toLowerCase()
+        );
+
+        if (attendee) {
+          const mealForm = attendee.organizerNotes?.mealForm || {};
+          const infoDisplay = document.getElementById("meal-info-display");
+
+          // Get meal pickup status
+          const mealPickups = attendee.organizerNotes?.mealPickups || {};
+
+          // Get general dietary restrictions if any
+          const dietaryRestrictions = attendee.dietaryRestrictions || "None";
+
+          // Create a more visually appealing display
+          infoDisplay.innerHTML = `
+            <div class="attendee-info">
+              <h2>${
+                attendee.preferredName || attendee.fullName || "Unknown"
+              }</h2>
+              <p class="attendee-id">ID: ${attendee.id}</p>
+              <p class="general-dietary"><strong>General Dietary Restrictions:</strong> ${dietaryRestrictions}</p>
+              <p class="allergies-medical"><strong>Allergies & Medical Concerns:</strong> ${
+                attendee.allergiesAndMedicalConcerns || "None"
+              }</p>
+
+              <div class="meal-section" id="sunday-breakfast-section">
+                <div class="meal-header">
+                  <h3>Saturday Breakfast (Donuts)</h3>
+                  <div class="meal-status ${
+                    mealPickups["sunday-breakfast"] ? "picked-up" : ""
+                  }">
+                    ${
+                      mealPickups["sunday-breakfast"]
+                        ? "PICKED UP ✓"
+                        : "Not picked up"
+                    }
+                  </div>
+                </div>
+                <p>${
+                  mealForm["sunday-breakfast"]?.["donuts"] || "Not selected"
+                }</p>
+                <p class="dietary">${
+                  (
+                    mealForm["sunday-breakfast"]?.["dietary-restrictions"] || []
+                  ).join(", ") || "No dietary restrictions"
+                }</p>
+                ${
+                  mealPickups["sunday-breakfast"]
+                    ? `<button class="unpickup-button" data-meal="sunday-breakfast">Mark as Not Picked Up</button>`
+                    : `<button class="pickup-button" data-meal="sunday-breakfast">Mark as Picked Up</button>`
+                }
+              </div>
+
+              <div class="meal-section" id="saturday-lunch-section">
+                <div class="meal-header">
+                  <h3>Saturday Lunch (Pizza)</h3>
+                  <div class="meal-status ${
+                    mealPickups["saturday-lunch"] ? "picked-up" : ""
+                  }">
+                    ${
+                      mealPickups["saturday-lunch"]
+                        ? "PICKED UP ✓"
+                        : "Not picked up"
+                    }
+                  </div>
+                </div>
+                <p>${
+                  mealForm["saturday-lunch"]?.["pizza"] || "Not selected"
+                }</p>
+                ${
+                  mealPickups["saturday-lunch"]
+                    ? `<button class="unpickup-button" data-meal="saturday-lunch">Mark as Not Picked Up</button>`
+                    : `<button class="pickup-button" data-meal="saturday-lunch">Mark as Picked Up</button>`
+                }
+              </div>
+
+              <div class="meal-section" id="saturday-dinner-section">
+                <div class="meal-header">
+                  <h3>Saturday Dinner (iniBurger)</h3>
+                  <div class="meal-status ${
+                    mealPickups["saturday-dinner"] ? "picked-up" : ""
+                  }">
+                    ${
+                      mealPickups["saturday-dinner"]
+                        ? "PICKED UP ✓"
+                        : "Not picked up"
+                    }
+                  </div>
+                </div>
+                <p>${
+                  mealForm["saturday-dinner"]?.["iniburger"] || "Not selected"
+                }</p>
+                <p class="dietary">${
+                  (
+                    mealForm["saturday-dinner"]?.["dietary-restrictions"] || []
+                  ).join(", ") || "No dietary restrictions"
+                }</p>
+                <p>Side: ${
+                  mealForm["saturday-dinner"]?.["side"] || "Not selected"
+                }</p>
+                ${
+                  mealPickups["saturday-dinner"]
+                    ? `<button class="unpickup-button" data-meal="saturday-dinner">Mark as Not Picked Up</button>`
+                    : `<button class="pickup-button" data-meal="saturday-dinner">Mark as Picked Up</button>`
+                }
+              </div>
+            </div>
+          `;
+
+          // Also show a toast notification
+          Toastify({
+            text: `Found: ${attendee.preferredName || attendee.fullName}`,
+            duration: 3000,
+            close: true,
+            style: { background: "#5cffd1" },
+          }).showToast();
+
+          // Clear the input field after successful scan
+          document.getElementById("attendee-id").value = "";
+          // Auto-focus the input field for the next scan
+          document.getElementById("attendee-id").focus();
+        } else {
+          document.getElementById("meal-info-display").innerHTML = `
+            <div class="error-message">
+              <h3>No data found for ID: ${attendeeId}</h3>
+            </div>
+          `;
+
+          Toastify({
+            text: "No data found for the given ID",
+            duration: 3000,
+            close: true,
+            style: { background: "#f44336" },
+          }).showToast();
+        }
+      }
+
+      // Handle form submission
+      document
+        .getElementById("meal-form-id")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const attendeeId = document
+            .getElementById("attendee-id")
+            .value.trim();
+          showAttendeeInfo(attendeeId);
+        });
+
+      // Handle barcode scanner input
+      document
+        .getElementById("attendee-id")
+        .addEventListener("keypress", function (event) {
+          if (event.key === "Enter") {
+            event.preventDefault(); // Prevent form submission
+            const attendeeId = event.target.value.trim();
+            showAttendeeInfo(attendeeId);
+          }
+        });
+
+      // Auto-focus the input field
+      document.getElementById("attendee-id").focus();
+
+      // Keep focus on the input field
+      document.addEventListener("click", function () {
+        document.getElementById("attendee-id").focus();
+      });
+
+      // Handle meal pickup button clicks
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("pickup-button")) {
+          const mealType = event.target.getAttribute("data-meal");
+          const attendeeId = document
+            .querySelector(".attendee-id")
+            .textContent.replace("ID: ", "");
+
+          // Disable the button to prevent double-clicks
+          event.target.disabled = true;
+          event.target.textContent = "Processing...";
+
+          // Send the pickup data to the server
+          fetch("/api/track-meal-pickup", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              attendee_id: attendeeId,
+              meal_type: mealType,
+              pickup_status: true,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                // Update the UI to show the meal as picked up
+                const statusElement =
+                  event.target.parentNode.querySelector(".meal-status");
+                statusElement.textContent = "PICKED UP ✓";
+                statusElement.classList.add("picked-up");
+
+                // Replace with unpickup button
+                const unpickupButton = document.createElement("button");
+                unpickupButton.className = "unpickup-button";
+                unpickupButton.setAttribute("data-meal", mealType);
+                unpickupButton.textContent = "Mark as Not Picked Up";
+
+                // Replace the pickup button with the unpickup button
+                event.target.parentNode.replaceChild(
+                  unpickupButton,
+                  event.target
+                );
+
+                // Show success message
+                Toastify({
+                  text: `${data.attendee}'s ${mealType.replace(
+                    "-",
+                    " "
+                  )} marked as picked up!`,
+                  duration: 3000,
+                  close: true,
+                  style: { background: "#5cffd1" },
+                }).showToast();
+              } else {
+                // Re-enable the button if there was an error
+                event.target.disabled = false;
+                event.target.textContent = "Mark as Picked Up";
+
+                // Show error message
+                Toastify({
+                  text: data.error || "Failed to update meal pickup status",
+                  duration: 3000,
+                  close: true,
+                  style: { background: "#f44336" },
+                }).showToast();
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              // Re-enable the button if there was an error
+              event.target.disabled = false;
+              event.target.textContent = "Mark as Picked Up";
+
+              // Show error message
+              Toastify({
+                text: "Network error. Please try again.",
+                duration: 3000,
+                close: true,
+                style: { background: "#f44336" },
+              }).showToast();
+            });
+        }
+      });
+
+      // Handle unpickup button clicks
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("unpickup-button")) {
+          const mealType = event.target.getAttribute("data-meal");
+          const attendeeId = document
+            .querySelector(".attendee-id")
+            .textContent.replace("ID: ", "");
+
+          // Disable the button to prevent double-clicks
+          event.target.disabled = true;
+          event.target.textContent = "Processing...";
+
+          // Send the unpickup data to the server
+          fetch("/api/track-meal-pickup", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              attendee_id: attendeeId,
+              meal_type: mealType,
+              pickup_status: false,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                // Update the UI to show the meal as not picked up
+                const statusElement =
+                  event.target.parentNode.querySelector(".meal-status");
+                statusElement.textContent = "Not picked up";
+                statusElement.classList.remove("picked-up");
+
+                // Replace with pickup button
+                const pickupButton = document.createElement("button");
+                pickupButton.className = "pickup-button";
+                pickupButton.setAttribute("data-meal", mealType);
+                pickupButton.textContent = "Mark as Picked Up";
+
+                // Replace the unpickup button with the pickup button
+                event.target.parentNode.replaceChild(
+                  pickupButton,
+                  event.target
+                );
+
+                // Show success message
+                Toastify({
+                  text: `${data.attendee}'s ${mealType.replace(
+                    "-",
+                    " "
+                  )} marked as not picked up!`,
+                  duration: 3000,
+                  close: true,
+                  style: { background: "#5cffd1" },
+                }).showToast();
+              } else {
+                // Re-enable the button if there was an error
+                event.target.disabled = false;
+                event.target.textContent = "Mark as Not Picked Up";
+
+                // Show error message
+                Toastify({
+                  text: data.error || "Failed to update meal pickup status",
+                  duration: 3000,
+                  close: true,
+                  style: { background: "#f44336" },
+                }).showToast();
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              // Re-enable the button if there was an error
+              event.target.disabled = false;
+              event.target.textContent = "Mark as Not Picked Up";
+
+              // Show error message
+              Toastify({
+                text: "Network error. Please try again.",
+                duration: 3000,
+                close: true,
+                style: { background: "#f44336" },
+              }).showToast();
+            });
+        }
+      });
+
+      // Handle logo click (Easter egg)
+      let clickCount = 0;
+      document.querySelector(".logo").addEventListener("click", () => {
+        clickCount++;
+        if (clickCount >= 4) {
+          window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+        }
+      });
+    </script>
+
+    <style>
+      .meal-grabber-container {
+        margin: 20px 0;
+      }
+
+      .meal-grabber-container form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      .meal-grabber-container input {
+        padding: 10px;
+        font-size: 16px;
+        border: 2px solid #477b78;
+        border-radius: 5px;
+      }
+
+      .meal-grabber-container button {
+        padding: 10px;
+        background-color: #477b78;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .meal-grabber-container button:hover {
+        background-color: #5a9e9b;
+      }
+
+      .meal-info-display {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .attendee-info {
+        text-align: left;
+      }
+
+      .attendee-info h2 {
+        margin-top: 0;
+        color: #5cffd1;
+        border-bottom: 1px solid #5cffd1;
+        padding-bottom: 10px;
+      }
+
+      .attendee-id {
+        font-family: monospace;
+        background-color: rgba(0, 0, 0, 0.3);
+        padding: 5px 10px;
+        border-radius: 5px;
+        display: inline-block;
+      }
+
+      .meal-section {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+      }
+
+      .meal-section h3 {
+        margin-top: 0;
+        color: #5cffd1;
+      }
+
+      .dietary {
+        font-style: italic;
+        color: #ff9e9e;
+      }
+
+      .error-message {
+        color: #ff6b6b;
+        text-align: center;
+      }
+
+      .navigation-links {
+        margin-top: 30px;
+      }
+
+      .general-dietary {
+        background-color: rgba(255, 158, 158, 0.2);
+        padding: 8px 12px;
+        border-radius: 5px;
+        margin-top: 10px;
+        display: inline-block;
+      }
+
+      .allergies-medical {
+        background-color: rgba(255, 204, 92, 0.2);
+        padding: 8px 12px;
+        border-radius: 5px;
+        margin-top: 10px;
+        display: inline-block;
+      }
+
+      .meal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .meal-status {
+        font-size: 0.9em;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background-color: rgba(0, 0, 0, 0.2);
+      }
+
+      .meal-status.picked-up {
+        background-color: rgba(92, 255, 209, 0.3);
+        color: #5cffd1;
+        font-weight: bold;
+      }
+
+      .pickup-button {
+        margin-top: 10px;
+        padding: 8px 12px;
+        background-color: #477b78;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.2s;
+      }
+
+      .pickup-button:hover:not([disabled]) {
+        background-color: #5a9e9b;
+      }
+
+      .pickup-button:disabled {
+        background-color: #2a4a49;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+
+      .unpickup-button {
+        margin-top: 10px;
+        padding: 8px 12px;
+        background-color: #78474b;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.2s;
+      }
+
+      .unpickup-button:hover:not([disabled]) {
+        background-color: #9b5a5e;
+      }
+
+      .unpickup-button:disabled {
+        background-color: #4a2a2c;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+    </style>
+  </body>
+</html>

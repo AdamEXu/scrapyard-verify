@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta content="width=device-width,initial-scale=1" name="viewport" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 600px;
+        background: #fff;
+        padding: 20px;
+        margin: auto;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1,
+      h2,
+      h3 {
+        color: #477b78;
+      }
+      a {
+        color: #477b78;
+        text-decoration: none;
+        font-weight: 700;
+      }
+      .button {
+        display: inline-block;
+        padding: 10px 15px;
+        margin-top: 10px;
+        background: #477b78;
+        color: #fff;
+        border-radius: 5px;
+        text-align: center;
+      }
+      .footer {
+        font-size: 12px;
+        text-align: center;
+        color: #777;
+        margin-top: 20px;
+      }
+      .footer img {
+        margin-top: 10px;
+        width: 150px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <p>Hey {{ attendee.preferredName }},</p>
+      <p>
+        Thanks for signing up for Scrapyard! This email contains some pretty
+        important information about Scrapyard Silicon Valley, so make sure to
+        read on.
+      </p>
+
+      <h2>Event Details</h2>
+      <p>
+        <strong>📍 Address:</strong>
+        <a href="https://maps.app.goo.gl/Bm3AR4uYtBxviEra8"
+          >Hacker Dojo, 855 Maude Ave, Mountain View, CA 94043</a
+        >
+      </p>
+      <p>
+        <strong>📅 Date & Time:</strong> Saturday, March 15, 2025, from 9:00 AM
+        to 10:00 PM (<a
+          href="https://cdn.hack.pet/slackcdn/deb123029ebbe09ec9715466ac402bfb.ics"
+          >Add to Calendar</a
+        >)
+      </p>
+      <p>
+        <strong>🎒 What to Bring:</strong> 💻 Laptop, 🔌 Charger, and a 🧠
+        Imagination!
+      </p>
+      <p>
+        Check-in and breakfast start at 9:00 AM, and the opening ceremony starts
+        at 10:00 AM. Try to arrive before the opening ceremony if possible.
+      </p>
+
+      <h2>🍔 Meal Form 🍕</h2>
+      <p>
+        If you attended Counterspell Silicon Valley, you'll remember our amazing
+        meal form! It was totally perfect with no hiccups at all whatsoever, and
+        it went super smoothly during the event with no one confused about it.
+        Check out the super duper improved meal form below, which will
+        automatically be linked to your Scrapyard sign-up! You'll need to log in
+        with the email you used to sign up for Scrapyard. If you have any
+        problems, feel free to reply to this email and I'll help you sort out
+        any issues.
+      </p>
+      <a
+        href="https://id.scrapyard.dev/dashboard/meal-form"
+        style="
+          display: inline-block;
+          padding: 10px 15px;
+          margin-top: 10px;
+          background-color: #477b78;
+          color: #ffffff;
+          border-radius: 5px;
+          text-align: center;
+          text-decoration: none;
+          font-weight: bold;
+          font-family: Arial, sans-serif;
+        "
+        >Fill Out Meal Form</a
+      >
+      <p></p>
+      <p style="font-size: 12px">
+        Note: We are unable to guarantee that you will receive your preferred
+        meal choice. We will do our best to accommodate all dietary
+        restrictions. If certain options do not have enough demand, they might
+        not be available on the day of the event.
+      </p>
+
+      <h2>💬 Join the Discord 📢</h2>
+      <p>
+        Join the Scrapyard Silicon Valley Discord server for real-time updates
+        and to connect with other attendees.
+      </p>
+      <a
+        href="https://discord.gg/32BsffvEf4"
+        style="
+          display: inline-block;
+          padding: 10px 15px;
+          margin-top: 10px;
+          background-color: #477b78;
+          color: #ffffff;
+          border-radius: 5px;
+          text-align: center;
+          text-decoration: none;
+          font-weight: bold;
+          font-family: Arial, sans-serif;
+        "
+        >Join Discord</a
+      >
+
+      <h2>📝 Waivers ✍️</h2>
+      <p>
+        Waivers will be sent out soon. Tell your parents to check their emails
+        or be ready to sign in person at the event.
+      </p>
+
+      <h2>👀 Chaperone Sign Up 🧑‍🧒‍🧒</h2>
+      <p>
+        We still need chaperones! If your parents or siblings (18+) can help,
+        please sign up.
+      </p>
+      <a
+        href="https://www.signupgenius.com/go/10C054DACA928AAFCCE9-55260518-scrapyard"
+        style="
+          display: inline-block;
+          padding: 10px 15px;
+          margin-top: 10px;
+          background-color: #477b78;
+          color: #ffffff;
+          border-radius: 5px;
+          text-align: center;
+          text-decoration: none;
+          font-weight: bold;
+          font-family: Arial, sans-serif;
+        "
+        >Chaperone Sign Up</a
+      >
+      <p></p>
+      <p><br /></p>
+      <p>
+        I'm looking forward to seeing you at Scrapyard Silicon Valley! If you
+        have any questions, feel free to reply to this email.
+      </p>
+      <p>
+        Thanks,<br /><strong>Adam Xu</strong><br />Organizer,
+        <a href="https://scrapyard.hackclub.com/silicon-valley"
+          >Scrapyard Silicon Valley</a
+        >
+      </p>
+      <a href="https://scrapyard.hackclub.com/silicon-valley"
+        ><img
+          alt="Scrapyard Silicon Valley"
+          src="https://d3b9kr64nievew.cloudfront.net/cm85j551v02kumpkx5jikcz0d/cm85j55aa02kvmpkxfb42gjmk.png"
+          width="200"
+      /></a>
+    </div>
+  </body>
+</html>

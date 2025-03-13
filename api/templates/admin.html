@@ -43,6 +43,10 @@
     <div class="container2">
       <div class="container">
         <h1>Admin Panel</h1>
+        <div class="admin-nav">
+          <a href="/admin" class="admin-nav-link">Dashboard</a>
+          <a href="/admin/meal-grabber" class="admin-nav-link">Meal Grabber</a>
+        </div>
         <h2>Attendees</h2>
         <table id="attendees">
           <tr>
@@ -53,7 +57,7 @@
             <th>Discord ID</th>
             <th>Pronouns</th>
             <th>Meal Form</th>
-            <th>Waitlist Status</th>
+            <th>Info Email Status</th>
             <th>Actions</th>
           </tr>
         </table>
@@ -77,372 +81,1388 @@
                 const cell9 = row.insertCell(8);
 
                 cell1.innerHTML = attendee.id;
-                cell2.innerHTML = attendee.preferredName;
-                // cell3.innerHTML = "";
-                cell3.innerHTML = attendee.fullName;
-                // cell4.innerHTML = "";
-                cell4.innerHTML = attendee.email;
-                cell5.innerHTML = attendee.organizerNotes.discord || "";
-                cell6.innerHTML = attendee.pronouns;
-                // cell7.innerHTML = ;
+                cell2.innerHTML = attendee.preferredName || "";
+                cell3.innerHTML = attendee.fullName || "";
+                cell4.innerHTML = attendee.email || "";
+                cell5.innerHTML = attendee.organizerNotes?.discord || "";
+                cell6.innerHTML = attendee.pronouns || "";
                 // if submitted, show checkmark
-                cell7.innerHTML = attendee.organizerNotes.mealForm ? "✓" : "";
-                cell7.style.color = attendee.organizerNotes.mealForm
+                cell7.innerHTML = attendee.organizerNotes?.mealForm ? "✓" : "";
+                cell7.style.color = attendee.organizerNotes?.mealForm
                   ? "#5cffd1"
                   : "#f44336";
-                cell8.innerHTML = attendee.organizerNotes.waitlist || "pending";
-                if (attendee.organizerNotes.waitlist === "rejected") {
-                  cell8.style.color = "#f44336";
-                } else if (attendee.organizerNotes.waitlist === "approved") {
+
+                // Info email status display
+                const infoEmailStatus =
+                  attendee.organizerNotes?.waitlist || "not sent";
+                cell8.innerHTML =
+                  infoEmailStatus === "approved"
+                    ? "sent"
+                    : infoEmailStatus === "rejected"
+                    ? "rejected"
+                    : "not sent";
+                if (infoEmailStatus === "approved") {
                   cell8.style.color = "#5cffd1";
+                } else if (infoEmailStatus === "rejected") {
+                  cell8.style.color = "#f44336";
+                } else {
+                  cell8.style.color = "#ffcc5c";
                 }
 
-                // Only show action buttons for pending waitlist status
+                // Info email action buttons
                 if (
-                  (attendee.organizerNotes.waitlist || "pending") === "pending"
+                  infoEmailStatus === "waitlisted" ||
+                  infoEmailStatus === "not sent" || // Added this condition
+                  infoEmailStatus === "rejected" ||
+                  !infoEmailStatus
                 ) {
-                  const approveBtn = document.createElement("button");
-                  approveBtn.innerHTML = "Approve";
-                  approveBtn.style.marginRight = "10px";
-                  approveBtn.addEventListener("click", () => {
-                    fetch("/api/waitlist/approve", {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({
-                        attendee_id: attendee.id,
-                      }),
-                    })
-                      .then((response) => response.json())
-                      .then((data) => {
-                        if (data.success) {
-                          cell8.innerHTML = "approved";
-                          cell8.style.color = "#5cffd1";
-                          cell9.innerHTML = "";
-                        }
-                      });
-                  });
+                  cell9.innerHTML = `
+                    <button class="approve-btn" data-id="${attendee.id}">Send Info</button>
+                  `;
+                } else if (infoEmailStatus === "approved") {
+                  cell9.innerHTML = `
+                    <button class="resend-btn" data-id="${attendee.id}">Send Info Again</button>
+                  `;
+                }
+              });
+            });
 
-                  const rejectBtn = document.createElement("button");
-                  rejectBtn.innerHTML = "Reject";
-                  rejectBtn.addEventListener("click", () => {
-                    const reason = prompt("Reason for rejection:");
-                    if (reason) {
-                      fetch("/api/waitlist/reject", {
+          // Add event listeners for approve buttons
+          document.addEventListener("click", function (event) {
+            if (event.target.classList.contains("approve-btn")) {
+              const attendeeId = event.target.getAttribute("data-id");
+              approveAttendee(attendeeId, event.target);
+            }
+          });
+
+          function approveAttendee(attendeeId, buttonElement) {
+            // Disable the button to prevent double-clicks
+            buttonElement.disabled = true;
+            const originalText = buttonElement.textContent;
+            buttonElement.textContent = "Processing...";
+
+            fetch("/api/approve", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                attendee_id: attendeeId,
+                resend: originalText === "Send Info Again",
+              }),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  if (originalText === "Send Info Again") {
+                    // Just show a success message without reloading
+                    alert(`Information email sent to ${data.attendee}`);
+                    buttonElement.disabled = false;
+                    buttonElement.textContent = originalText;
+                  } else {
+                    // Refresh the page to show updated status
+                    window.location.reload();
+                  }
+                } else {
+                  alert(
+                    "Error: " + (data.error || "Failed to process request")
+                  );
+                  buttonElement.disabled = false;
+                  buttonElement.textContent = originalText;
+                }
+              })
+              .catch((error) => {
+                console.error("Error:", error);
+                alert("Network error. Please try again.");
+                buttonElement.disabled = false;
+                buttonElement.textContent = originalText;
+              });
+          }
+
+          function rejectAttendee(attendeeId, buttonElement) {
+            // Disable the button to prevent double-clicks
+            buttonElement.disabled = true;
+            buttonElement.textContent = "Processing...";
+
+            fetch("/api/reject", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                attendee_id: attendeeId,
+              }),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  // Refresh the page to show updated status
+                  window.location.reload();
+                } else {
+                  alert(
+                    "Error: " + (data.error || "Failed to reject attendee")
+                  );
+                  buttonElement.disabled = false;
+                  buttonElement.textContent = "Reject";
+                }
+              })
+              .catch((error) => {
+                console.error("Error:", error);
+                alert("Network error. Please try again.");
+                buttonElement.disabled = false;
+                buttonElement.textContent = "Reject";
+              });
+          }
+        </script>
+        <div class="statistics-section">
+          <h2>Statistics</h2>
+
+          <div class="stats-overview">
+            <h3>Overview</h3>
+            <ul class="stats-list">
+              <li>
+                <strong>Total Attendees:</strong>
+                <span id="total-attendees">{{ num_attendees }}</span>
+              </li>
+              <li>
+                <strong>Meal Form Completed:</strong>
+                <span id="meal-form-completed">0</span> (<span
+                  id="meal-form-percentage"
+                  >0%</span
+                >)
+              </li>
+              <li>
+                <strong>Discord Verified:</strong>
+                <span id="discord-verified">0</span> (<span
+                  id="discord-percentage"
+                  >0%</span
+                >)
+              </li>
+              <li>
+                <strong>Info Email Status:</strong>
+                <span id="waitlist-approved">0</span> sent,
+                <span id="waitlist-waitlisted">0</span> not sent,
+                <span id="waitlist-rejected">0</span> rejected
+              </li>
+            </ul>
+          </div>
+
+          <div class="charts-container">
+            <div class="chart-wrapper">
+              <h3>Saturday Breakfast (Donuts)</h3>
+              <canvas id="breakfast-chart"></canvas>
+            </div>
+
+            <div class="chart-wrapper">
+              <h3>Saturday Lunch (Pizza)</h3>
+              <canvas id="lunch-chart"></canvas>
+            </div>
+
+            <div class="chart-wrapper">
+              <h3>Saturday Dinner (iniBurger)</h3>
+              <canvas id="dinner-chart"></canvas>
+            </div>
+
+            <div class="chart-wrapper">
+              <h3>Pronouns Distribution</h3>
+              <canvas id="pronouns-chart"></canvas>
+            </div>
+
+            <div class="chart-wrapper">
+              <h3>Dietary Restrictions</h3>
+              <canvas id="dietary-chart"></canvas>
+            </div>
+
+            <div class="chart-wrapper">
+              <h3>Meal Pickups</h3>
+              <canvas id="pickup-chart"></canvas>
+            </div>
+
+            <div class="chart-wrapper">
+              <h3>Info Email Status</h3>
+              <canvas id="waitlist-chart"></canvas>
+            </div>
+
+            <div class="chart-wrapper">
+              <h3>Meal Form Completion</h3>
+              <canvas id="meal-form-completion-chart"></canvas>
+            </div>
+
+            <div class="chart-wrapper">
+              <h3>Hackathon Energy Forecast</h3>
+              <canvas id="energy-forecast-chart"></canvas>
+            </div>
+          </div>
+
+          <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+          <script>
+            // Wait for attendee data to be loaded
+            function generateCharts() {
+              if (!attendees || attendees.length === 0) {
+                setTimeout(generateCharts, 500);
+                return;
+              }
+
+              // Update basic statistics
+              document.getElementById("total-attendees").textContent =
+                attendees.length;
+
+              // Count meal form completions
+              const mealFormCompleted = attendees.filter(
+                (a) => a.organizerNotes && a.organizerNotes.mealForm
+              ).length;
+              document.getElementById("meal-form-completed").textContent =
+                mealFormCompleted;
+              document.getElementById("meal-form-percentage").textContent =
+                Math.round((mealFormCompleted / attendees.length) * 100) + "%";
+
+              // Count Discord verifications
+              const discordVerified = attendees.filter(
+                (a) => a.organizerNotes && a.organizerNotes.discord
+              ).length;
+              document.getElementById("discord-verified").textContent =
+                discordVerified;
+              document.getElementById("discord-percentage").textContent =
+                Math.round((discordVerified / attendees.length) * 100) + "%";
+
+              // Count info email statuses
+              const infoEmailSent = attendees.filter(
+                (a) => a.organizerNotes?.waitlist === "approved"
+              ).length;
+              const infoEmailRejected = attendees.filter(
+                (a) => a.organizerNotes?.waitlist === "rejected"
+              ).length;
+              const infoEmailNotSent =
+                attendees.length - infoEmailSent - infoEmailRejected;
+
+              document.getElementById("waitlist-approved").textContent =
+                infoEmailSent;
+              document.getElementById("waitlist-waitlisted").textContent =
+                infoEmailNotSent;
+              document.getElementById("waitlist-rejected").textContent =
+                infoEmailRejected;
+
+              // Generate breakfast chart
+              const breakfastData = {};
+              attendees.forEach((attendee) => {
+                if (
+                  attendee.organizerNotes &&
+                  attendee.organizerNotes.mealForm &&
+                  attendee.organizerNotes.mealForm["sunday-breakfast"] &&
+                  attendee.organizerNotes.mealForm["sunday-breakfast"]["donuts"]
+                ) {
+                  const choice =
+                    attendee.organizerNotes.mealForm["sunday-breakfast"][
+                      "donuts"
+                    ];
+                  breakfastData[choice] = (breakfastData[choice] || 0) + 1;
+                }
+              });
+
+              // Convert option names to title case for better display
+              const formattedBreakfastData = {};
+              for (const [key, value] of Object.entries(breakfastData)) {
+                // Convert key to title case (first letter uppercase)
+                const formattedKey =
+                  key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+                formattedBreakfastData[formattedKey] = value;
+              }
+
+              new Chart(document.getElementById("breakfast-chart"), {
+                type: "pie",
+                data: {
+                  labels: Object.keys(formattedBreakfastData),
+                  datasets: [
+                    {
+                      data: Object.values(formattedBreakfastData),
+                      backgroundColor: [
+                        "#5cffd1",
+                        "#ff9e9e",
+                        "#ffcc5c",
+                        "#b3e0ff",
+                        "#d8b3ff",
+                        "#ff8080",
+                        "#a0a0a0",
+                      ],
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: "right",
+                      labels: {
+                        color: "#ffffff",
+                        font: {
+                          size: 11,
+                        },
+                        boxWidth: 15,
+                        padding: 10,
+                      },
+                    },
+                    tooltip: {
+                      bodyFont: {
+                        size: 12,
+                      },
+                      titleFont: {
+                        size: 13,
+                      },
+                    },
+                  },
+                },
+              });
+
+              // Generate lunch chart
+              const lunchData = {};
+              attendees.forEach((attendee) => {
+                if (
+                  attendee.organizerNotes &&
+                  attendee.organizerNotes.mealForm &&
+                  attendee.organizerNotes.mealForm["saturday-lunch"] &&
+                  attendee.organizerNotes.mealForm["saturday-lunch"]["pizza"]
+                ) {
+                  const choice =
+                    attendee.organizerNotes.mealForm["saturday-lunch"]["pizza"];
+                  lunchData[choice] = (lunchData[choice] || 0) + 1;
+                }
+              });
+
+              // Format pizza options for better display
+              const formattedLunchData = {};
+              for (const [key, value] of Object.entries(lunchData)) {
+                if (key === "skip") continue; // Skip the 'skip' option
+
+                // Format the key for better display
+                let formattedKey = key
+                  .split("-")
+                  .map(
+                    (word) =>
+                      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                  )
+                  .join(" ");
+
+                formattedLunchData[formattedKey] = value;
+              }
+
+              new Chart(document.getElementById("lunch-chart"), {
+                type: "pie",
+                data: {
+                  labels: Object.keys(formattedLunchData),
+                  datasets: [
+                    {
+                      data: Object.values(formattedLunchData),
+                      backgroundColor: [
+                        "#5cffd1",
+                        "#ff9e9e",
+                        "#ffcc5c",
+                        "#b3e0ff",
+                        "#d8b3ff",
+                        "#ff8080",
+                        "#a0a0a0",
+                      ],
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: "right",
+                      labels: {
+                        color: "#ffffff",
+                        font: {
+                          size: 11,
+                        },
+                        boxWidth: 15,
+                        padding: 10,
+                      },
+                    },
+                    tooltip: {
+                      bodyFont: {
+                        size: 12,
+                      },
+                      titleFont: {
+                        size: 13,
+                      },
+                    },
+                  },
+                },
+              });
+
+              // Generate dinner chart
+              const dinnerData = {};
+              attendees.forEach((attendee) => {
+                if (
+                  attendee.organizerNotes &&
+                  attendee.organizerNotes.mealForm &&
+                  attendee.organizerNotes.mealForm["saturday-dinner"] &&
+                  attendee.organizerNotes.mealForm["saturday-dinner"][
+                    "iniburger"
+                  ]
+                ) {
+                  const choice =
+                    attendee.organizerNotes.mealForm["saturday-dinner"][
+                      "iniburger"
+                    ];
+                  dinnerData[choice] = (dinnerData[choice] || 0) + 1;
+                }
+              });
+
+              // Format burger options for better display
+              const formattedDinnerData = {};
+              for (const [key, value] of Object.entries(dinnerData)) {
+                if (key === "skip") continue; // Skip the 'skip' option
+
+                // Format the key for better display
+                let formattedKey = key
+                  .split("-")
+                  .map(
+                    (word) =>
+                      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                  )
+                  .join(" ");
+
+                formattedDinnerData[formattedKey] = value;
+              }
+
+              new Chart(document.getElementById("dinner-chart"), {
+                type: "pie",
+                data: {
+                  labels: Object.keys(formattedDinnerData),
+                  datasets: [
+                    {
+                      data: Object.values(formattedDinnerData),
+                      backgroundColor: [
+                        "#5cffd1",
+                        "#ff9e9e",
+                        "#ffcc5c",
+                        "#b3e0ff",
+                        "#d8b3ff",
+                        "#ff8080",
+                        "#a0a0a0",
+                        "#80b3ff",
+                        "#ffb380",
+                        "#80ff80",
+                      ],
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: "right",
+                      labels: {
+                        color: "#ffffff",
+                        font: {
+                          size: 11,
+                        },
+                        boxWidth: 15,
+                        padding: 10,
+                      },
+                    },
+                    tooltip: {
+                      bodyFont: {
+                        size: 12,
+                      },
+                      titleFont: {
+                        size: 13,
+                      },
+                    },
+                  },
+                },
+              });
+
+              // Generate pronouns chart
+              const pronounsData = {};
+              attendees.forEach((attendee) => {
+                if (attendee.pronouns) {
+                  // Normalize pronouns (lowercase and trim)
+                  const normalizedPronouns = attendee.pronouns
+                    .toLowerCase()
+                    .trim();
+                  pronounsData[normalizedPronouns] =
+                    (pronounsData[normalizedPronouns] || 0) + 1;
+                }
+              });
+
+              // Format pronouns for better display
+              const formattedPronounsData = {};
+              for (const [key, value] of Object.entries(pronounsData)) {
+                // Format pronouns for display (e.g., "he/him" -> "He/Him")
+                const formattedKey = key
+                  .split("/")
+                  .map(
+                    (part) =>
+                      part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+                  )
+                  .join("/");
+
+                formattedPronounsData[formattedKey] = value;
+              }
+
+              new Chart(document.getElementById("pronouns-chart"), {
+                type: "pie",
+                data: {
+                  labels: Object.keys(formattedPronounsData),
+                  datasets: [
+                    {
+                      data: Object.values(formattedPronounsData),
+                      backgroundColor: [
+                        "#5cffd1",
+                        "#ff9e9e",
+                        "#ffcc5c",
+                        "#b3e0ff",
+                        "#d8b3ff",
+                        "#ff8080",
+                        "#a0a0a0",
+                        "#80b3ff",
+                        "#ffb380",
+                        "#80ff80",
+                      ],
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: "right",
+                      labels: {
+                        color: "#ffffff",
+                        font: {
+                          size: 11,
+                        },
+                        boxWidth: 15,
+                        padding: 10,
+                      },
+                    },
+                    tooltip: {
+                      bodyFont: {
+                        size: 12,
+                      },
+                      titleFont: {
+                        size: 13,
+                      },
+                    },
+                  },
+                },
+              });
+
+              // Generate dietary restrictions chart
+              const dietaryData = {
+                "Gluten Free": 0,
+                "Lactose Intolerant": 0,
+                Vegetarian: 0,
+                Vegan: 0,
+              };
+
+              attendees.forEach((attendee) => {
+                // Check for general dietary restrictions
+                if (attendee.dietaryRestrictions) {
+                  const restrictions =
+                    attendee.dietaryRestrictions.toLowerCase();
+                  if (restrictions.includes("gluten"))
+                    dietaryData["Gluten Free"]++;
+                  if (restrictions.includes("lactose"))
+                    dietaryData["Lactose Intolerant"]++;
+                  if (restrictions.includes("vegetarian"))
+                    dietaryData["Vegetarian"]++;
+                  if (restrictions.includes("vegan")) dietaryData["Vegan"]++;
+                }
+
+                // Check meal form dietary restrictions
+                if (attendee.organizerNotes?.mealForm) {
+                  const mealForm = attendee.organizerNotes.mealForm;
+
+                  // Check dinner dietary restrictions
+                  if (mealForm["saturday-dinner"]?.["dietary-restrictions"]) {
+                    const dinnerRestrictions =
+                      mealForm["saturday-dinner"]["dietary-restrictions"];
+                    if (dinnerRestrictions.includes("gluten-free"))
+                      dietaryData["Gluten Free"]++;
+                    if (dinnerRestrictions.includes("lactose-intolerant"))
+                      dietaryData["Lactose Intolerant"]++;
+                  }
+
+                  // Check for vegetarian/vegan options selected
+                  if (
+                    mealForm["saturday-lunch"]?.["pizza"] === "veggie" ||
+                    mealForm["saturday-lunch"]?.["pizza"] === "gluten-free"
+                  ) {
+                    dietaryData["Vegetarian"]++;
+                    dietaryData["Vegan"]++;
+                  }
+
+                  if (
+                    mealForm["saturday-dinner"]?.["iniburger"] ===
+                      "gardenburger" ||
+                    mealForm["saturday-dinner"]?.["iniburger"] ===
+                      "falafel-malibu"
+                  ) {
+                    dietaryData["Vegetarian"]++;
+                  }
+                }
+              });
+
+              // Remove any dietary restrictions with zero count
+              const filteredDietaryData = {};
+              for (const [key, value] of Object.entries(dietaryData)) {
+                if (value > 0) {
+                  filteredDietaryData[key] = value;
+                }
+              }
+
+              new Chart(document.getElementById("dietary-chart"), {
+                type: "pie",
+                data: {
+                  labels: Object.keys(filteredDietaryData),
+                  datasets: [
+                    {
+                      data: Object.values(filteredDietaryData),
+                      backgroundColor: [
+                        "#5cffd1",
+                        "#ff9e9e",
+                        "#ffcc5c",
+                        "#b3e0ff",
+                      ],
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: "right",
+                      labels: {
+                        color: "#ffffff",
+                        font: {
+                          size: 11,
+                        },
+                        boxWidth: 15,
+                        padding: 10,
+                      },
+                    },
+                    tooltip: {
+                      bodyFont: {
+                        size: 12,
+                      },
+                      titleFont: {
+                        size: 13,
+                      },
+                    },
+                  },
+                },
+              });
+
+              // Generate meal pickups chart
+              const pickupData = {
+                "Breakfast Picked Up": 0,
+                "Breakfast Not Picked Up": 0,
+                "Lunch Picked Up": 0,
+                "Lunch Not Picked Up": 0,
+                "Dinner Picked Up": 0,
+                "Dinner Not Picked Up": 0,
+              };
+
+              // Count meal form submissions for each meal type
+              const breakfastSubmissions = attendees.filter(
+                (a) =>
+                  a.organizerNotes?.mealForm?.["sunday-breakfast"]?.[
+                    "donuts"
+                  ] &&
+                  a.organizerNotes.mealForm["sunday-breakfast"]["donuts"] !==
+                    "no" &&
+                  a.organizerNotes.mealForm["sunday-breakfast"]["donuts"] !==
+                    "skip"
+              ).length;
+
+              const lunchSubmissions = attendees.filter(
+                (a) =>
+                  a.organizerNotes?.mealForm?.["saturday-lunch"]?.["pizza"] &&
+                  a.organizerNotes.mealForm["saturday-lunch"]["pizza"] !==
+                    "skip"
+              ).length;
+
+              const dinnerSubmissions = attendees.filter(
+                (a) =>
+                  a.organizerNotes?.mealForm?.["saturday-dinner"]?.[
+                    "iniburger"
+                  ] &&
+                  a.organizerNotes.mealForm["saturday-dinner"]["iniburger"] !==
+                    "skip"
+              ).length;
+
+              // Count pickups
+              attendees.forEach((attendee) => {
+                if (attendee.organizerNotes?.mealPickups) {
+                  const pickups = attendee.organizerNotes.mealPickups;
+
+                  if (pickups["sunday-breakfast"]?.pickedUp) {
+                    pickupData["Breakfast Picked Up"]++;
+                  }
+
+                  if (pickups["saturday-lunch"]?.pickedUp) {
+                    pickupData["Lunch Picked Up"]++;
+                  }
+
+                  if (pickups["saturday-dinner"]?.pickedUp) {
+                    pickupData["Dinner Picked Up"]++;
+                  }
+                }
+              });
+
+              // Calculate not picked up counts
+              pickupData["Breakfast Not Picked Up"] =
+                breakfastSubmissions - pickupData["Breakfast Picked Up"];
+              pickupData["Lunch Not Picked Up"] =
+                lunchSubmissions - pickupData["Lunch Picked Up"];
+              pickupData["Dinner Not Picked Up"] =
+                dinnerSubmissions - pickupData["Dinner Picked Up"];
+
+              // Remove any pickup categories with zero count
+              const filteredPickupData = {};
+              for (const [key, value] of Object.entries(pickupData)) {
+                if (value > 0) {
+                  filteredPickupData[key] = value;
+                }
+              }
+
+              new Chart(document.getElementById("pickup-chart"), {
+                type: "bar",
+                data: {
+                  labels: Object.keys(filteredPickupData),
+                  datasets: [
+                    {
+                      data: Object.values(filteredPickupData),
+                      backgroundColor: [
+                        "#5cffd1",
+                        "#ff9e9e",
+                        "#5cffd1",
+                        "#ff9e9e",
+                        "#5cffd1",
+                        "#ff9e9e",
+                      ],
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      display: false,
+                    },
+                    tooltip: {
+                      bodyFont: {
+                        size: 12,
+                      },
+                      titleFont: {
+                        size: 13,
+                      },
+                    },
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        color: "#ffffff",
+                        font: {
+                          size: 11,
+                        },
+                      },
+                    },
+                    x: {
+                      ticks: {
+                        color: "#ffffff",
+                        font: {
+                          size: 10,
+                        },
+                        maxRotation: 45,
+                        minRotation: 45,
+                      },
+                    },
+                  },
+                },
+              });
+
+              // Generate info email status chart
+              const infoEmailData = {
+                Sent: infoEmailSent,
+                "Not Sent": infoEmailNotSent,
+                Rejected: infoEmailRejected,
+              };
+
+              new Chart(document.getElementById("waitlist-chart"), {
+                type: "pie",
+                data: {
+                  labels: Object.keys(infoEmailData),
+                  datasets: [
+                    {
+                      data: Object.values(infoEmailData),
+                      backgroundColor: ["#5cffd1", "#ffcc5c", "#ff9e9e"],
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: "right",
+                      labels: {
+                        color: "#ffffff",
+                        font: {
+                          size: 11,
+                        },
+                        boxWidth: 15,
+                        padding: 10,
+                      },
+                    },
+                    tooltip: {
+                      bodyFont: {
+                        size: 12,
+                      },
+                      titleFont: {
+                        size: 13,
+                      },
+                    },
+                  },
+                },
+              });
+
+              // Generate meal form completion chart
+              const mealFormData = {
+                Completed: 0,
+                "Not Completed": 0,
+              };
+
+              attendees.forEach((attendee) => {
+                if (
+                  attendee.organizerNotes &&
+                  attendee.organizerNotes.mealForm &&
+                  (attendee.organizerNotes.mealForm["saturday-lunch"] ||
+                    attendee.organizerNotes.mealForm["saturday-dinner"] ||
+                    attendee.organizerNotes.mealForm["sunday-breakfast"])
+                ) {
+                  mealFormData["Completed"]++;
+                } else {
+                  mealFormData["Not Completed"]++;
+                }
+              });
+
+              new Chart(document.getElementById("meal-form-completion-chart"), {
+                type: "pie",
+                data: {
+                  labels: Object.keys(mealFormData),
+                  datasets: [
+                    {
+                      data: Object.values(mealFormData),
+                      backgroundColor: ["#5cffd1", "#ff9e9e"],
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: "right",
+                      labels: {
+                        color: "#ffffff",
+                        font: {
+                          size: 11,
+                        },
+                        boxWidth: 15,
+                        padding: 10,
+                      },
+                    },
+                    tooltip: {
+                      bodyFont: {
+                        size: 12,
+                      },
+                      titleFont: {
+                        size: 13,
+                      },
+                    },
+                  },
+                },
+              });
+
+              // Generate a fun energy forecast chart
+              const hourLabels = [
+                "9 AM",
+                "10 AM",
+                "11 AM",
+                "12 PM",
+                "1 PM",
+                "2 PM",
+                "3 PM",
+                "4 PM",
+                "5 PM",
+                "6 PM",
+                "7 PM",
+                "8 PM",
+                "9 PM",
+                "10 PM",
+              ];
+
+              // Creative energy level prediction throughout the day
+              const energyLevels = [
+                85, // 9 AM: High energy at start (breakfast)
+                95, // 10 AM: Opening ceremony excitement
+                90, // 11 AM: Getting started on projects
+                75, // 12 PM: Slight dip before lunch
+                85, // 1 PM: Post-lunch energy boost
+                80, // 2 PM: Steady work
+                70, // 3 PM: Afternoon slump
+                65, // 4 PM: Deep in coding/debugging
+                75, // 5 PM: Second wind approaching dinner
+                90, // 6 PM: Dinner energy boost
+                85, // 7 PM: Project completion rush
+                95, // 8 PM: Demo preparation excitement
+                100, // 9 PM: Peak energy for demos
+                80, // 10 PM: Winding down but still excited
+              ];
+
+              // Caffeine consumption prediction
+              const caffeineConsumption = [
+                60, // 9 AM: Morning coffee
+                40, // 10 AM: Still running on breakfast coffee
+                30, // 11 AM: Coffee wearing off
+                25, // 12 PM: Pre-lunch lull
+                35, // 1 PM: Post-lunch coffee/soda
+                50, // 2 PM: Afternoon caffeine boost
+                70, // 3 PM: Fighting the slump with caffeine
+                65, // 4 PM: Sustained by caffeine
+                55, // 5 PM: Pre-dinner caffeine tapering
+                40, // 6 PM: Dinner break
+                60, // 7 PM: Final push caffeine
+                75, // 8 PM: Last-minute energy drinks
+                80, // 9 PM: Peak caffeine for demos
+                50, // 10 PM: Starting to wear off
+              ];
+
+              new Chart(document.getElementById("energy-forecast-chart"), {
+                type: "line",
+                data: {
+                  labels: hourLabels,
+                  datasets: [
+                    {
+                      label: "Energy Level",
+                      data: energyLevels,
+                      borderColor: "#5cffd1",
+                      backgroundColor: "rgba(92, 255, 209, 0.1)",
+                      borderWidth: 3,
+                      tension: 0.3,
+                      fill: true,
+                    },
+                    {
+                      label: "Caffeine Consumption",
+                      data: caffeineConsumption,
+                      borderColor: "#ffcc5c",
+                      backgroundColor: "rgba(255, 204, 92, 0.1)",
+                      borderWidth: 3,
+                      tension: 0.3,
+                      fill: true,
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      max: 100,
+                      grid: {
+                        color: "rgba(255, 255, 255, 0.1)",
+                      },
+                      ticks: {
+                        color: "#ffffff",
+                      },
+                    },
+                    x: {
+                      grid: {
+                        color: "rgba(255, 255, 255, 0.1)",
+                      },
+                      ticks: {
+                        color: "#ffffff",
+                      },
+                    },
+                  },
+                  plugins: {
+                    legend: {
+                      position: "top",
+                      labels: {
+                        color: "#ffffff",
+                        font: {
+                          size: 11,
+                        },
+                        boxWidth: 15,
+                        padding: 10,
+                      },
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function (context) {
+                          const label = context.dataset.label || "";
+                          const value = context.parsed.y;
+
+                          if (label === "Energy Level") {
+                            if (value > 90)
+                              return `${label}: ${value}% (Super Charged!)`;
+                            if (value > 75)
+                              return `${label}: ${value}% (High Energy)`;
+                            if (value > 60)
+                              return `${label}: ${value}% (Good Momentum)`;
+                            return `${label}: ${value}% (Needs Caffeine)`;
+                          } else {
+                            if (value > 70)
+                              return `${label}: ${value}% (Coffee Overload!)`;
+                            if (value > 50)
+                              return `${label}: ${value}% (Caffeinated)`;
+                            return `${label}: ${value}% (Seeking Caffeine)`;
+                          }
+                        },
+                      },
+                    },
+                  },
+                },
+              });
+            }
+
+            // Start generating charts once the page is loaded
+            document.addEventListener("DOMContentLoaded", generateCharts);
+          </script>
+        </div>
+        <!-- table with referrals -->
+        <h2>Referrals</h2>
+        <table id="referrals">
+          <tr>
+            <th>Referral Code</th>
+            <th>Emails</th>
+            <th>Status</th>
+          </tr>
+        </table>
+        <script>
+          fetch("/api/list_referrals")
+            .then((response) => response.json())
+            .then((data) => {
+              const table = document.getElementById("referrals");
+              for (const [signupId, referralData] of Object.entries(data)) {
+                const row = table.insertRow();
+                const cell1 = row.insertCell(0);
+                const cell2 = row.insertCell(1);
+                const cell3 = row.insertCell(2);
+
+                cell1.innerHTML = signupId;
+
+                // Create unordered list for emails
+                const emailList = document.createElement("ul");
+                emailList.style.listStyle = "none";
+                emailList.style.padding = "0";
+                emailList.style.margin = "0";
+
+                for (const email of referralData.refers) {
+                  const listItem = document.createElement("li");
+                  listItem.style.marginBottom = "5px";
+                  listItem.style.display = "flex";
+                  listItem.style.alignItems = "center";
+                  listItem.style.gap = "10px";
+
+                  // Create email span
+                  const emailSpan = document.createElement("span");
+                  emailSpan.textContent = email;
+
+                  // Create status indicator
+                  const statusSpan = document.createElement("span");
+                  const isSignedUp = referralData.signed_up[email];
+                  statusSpan.textContent = isSignedUp ? "✓" : "✗";
+                  statusSpan.style.color = isSignedUp ? "#5cffd1" : "#f44336";
+                  statusSpan.style.fontWeight = "bold";
+
+                  // Create delete button
+                  const deleteBtn = document.createElement("button");
+                  deleteBtn.innerHTML = "×";
+                  deleteBtn.style.marginLeft = "auto";
+                  deleteBtn.style.padding = "0 5px";
+                  deleteBtn.style.cursor = "pointer";
+                  deleteBtn.style.border = "none";
+                  deleteBtn.style.borderRadius = "3px";
+                  deleteBtn.style.backgroundColor = "#ff4444";
+                  deleteBtn.style.color = "white";
+
+                  deleteBtn.addEventListener("click", () => {
+                    if (
+                      confirm(
+                        `Are you sure you want to delete the referral for ${email}?`
+                      )
+                    ) {
+                      fetch("/api/remove_referral", {
                         method: "POST",
                         headers: {
                           "Content-Type": "application/json",
                         },
                         body: JSON.stringify({
-                          attendee_id: attendee.id,
-                          reason: reason,
+                          signup_id: signupId,
+                          email: email,
                         }),
-                      })
-                        .then((response) => response.json())
-                        .then((data) => {
-                          if (data.success) {
-                            cell8.innerHTML = "rejected";
-                            cell8.style.color = "#f44336";
-                            cell9.innerHTML = "";
+                      }).then((response) => {
+                        if (response.ok) {
+                          listItem.remove();
+                          if (emailList.children.length === 0) {
+                            row.remove();
                           }
-                        });
+                        }
+                      });
                     }
                   });
 
-                  cell9.appendChild(approveBtn);
-                  cell9.appendChild(rejectBtn);
+                  listItem.appendChild(emailSpan);
+                  listItem.appendChild(statusSpan);
+                  listItem.appendChild(deleteBtn);
+                  emailList.appendChild(listItem);
                 }
-              });
+
+                cell2.appendChild(emailList);
+
+                // Add total count and signup status
+                const totalSignedUp = Object.values(
+                  referralData.signed_up
+                ).filter(Boolean).length;
+                const statusSpan = document.createElement("span");
+                statusSpan.textContent = `${totalSignedUp}/${referralData.refers.length} signed up`;
+                statusSpan.style.color =
+                  totalSignedUp > 0 ? "#5cffd1" : "#f44336";
+                cell3.appendChild(statusSpan);
+              }
             });
         </script>
-        <div>
-          <h2>Statistics</h2>
-          <p>Number of attendees: {{ num_attendees }}</p>
-          <p>Number of waitlisted attendees: {{ num_waitlisted }}</p>
-          <p>Number of approved attendees: {{ num_approved }}</p>
-        </div>
-        <div>
-          <h2>Randomly Approve Waitlist</h2>
-          <form onsubmit="return false;">
-            <input
-              type="number"
-              id="numToApprove"
-              placeholder="Number to approve"
-            />
-            <button onclick="approveRandomly()">Approve</button>
-            <p id="result"></p>
-            <script>
-              function approveRandomly() {
-                const numToApprove =
-                  document.getElementById("numToApprove").value;
-                fetch("/api/waitlist/approve-random", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    numToApprove: numToApprove,
-                  }),
-                })
-                  .then((response) => response.json())
-                  .then((data) => {
-                    document.getElementById("result").innerHTML = data.message;
-                  });
-              }
-            </script>
-          </form>
-      </div>
-      <!-- table with referrals -->
-      <h2>Referrals</h2>
-      <table id="referrals">
-        <tr>
-          <th>Referral Code</th>
-          <th>Emails</th>
-          <th>Status</th>
-        </tr>
-      </table>
-      <script>
-        fetch("/api/list_referrals")
-          .then((response) => response.json())
-          .then((data) => {
-            const table = document.getElementById("referrals");
-            for (const [signupId, referralData] of Object.entries(data)) {
+        <!-- table with meal form -->
+        <h2>Meal Form</h2>
+        <table id="meal-form">
+          <tr>
+            <th>ID</th>
+            <th>(Preferred) Name</th>
+            <th>Legal Name</th>
+            <th>Sunday Breakfast</th>
+            <th>Saturday Lunch Pizza</th>
+            <th>Saturday Dinner iniBurger</th>
+            <th>Saturday Dinner Dietary</th>
+            <th>Saturday Dinner Side</th>
+            <th>Allergies & Medical Concerns</th>
+          </tr>
+        </table>
+        <script>
+          let cachedAttendees = null;
+
+          fetch("/api/get-attendees")
+            .then((response) => response.json())
+            .then((data) => {
+              cachedAttendees = data;
+              const table = document.getElementById("meal-form");
+              data.forEach((attendee) => {
+                const row = table.insertRow();
+                const cell1 = row.insertCell(0);
+                const cell2 = row.insertCell(1);
+                const cell3 = row.insertCell(2);
+                const cell4 = row.insertCell(3);
+                const cell6 = row.insertCell(4);
+                const cell7 = row.insertCell(5);
+                const cell8 = row.insertCell(6);
+                const cell9 = row.insertCell(7);
+                const cell10 = row.insertCell(8);
+
+                cell1.innerHTML = attendee.id;
+                cell2.innerHTML = attendee.preferredName || "";
+                cell3.innerHTML = attendee.fullName || "";
+
+                // Safely access meal form data with fallbacks
+                const mealForm = attendee.organizerNotes?.mealForm || {};
+
+                // Sunday Breakfast
+                cell4.innerHTML =
+                  mealForm["sunday-breakfast"]?.["donuts"] || "";
+
+                // Saturday Lunch
+                cell6.innerHTML = mealForm["saturday-lunch"]?.["pizza"] || "";
+
+                // Saturday Dinner
+                cell7.innerHTML =
+                  mealForm["saturday-dinner"]?.["iniburger"] || "";
+                cell8.innerHTML = (
+                  mealForm["saturday-dinner"]?.["dietary-restrictions"] || []
+                ).join(", ");
+                cell9.innerHTML = mealForm["saturday-dinner"]?.["side"] || "";
+
+                // Allergies and Medical Concerns
+                cell10.innerHTML = attendee.allergiesAndMedicalConcerns || "";
+              });
+            })
+            .catch((error) => {
+              console.error("Error fetching attendees:", error);
+              const table = document.getElementById("meal-form");
               const row = table.insertRow();
-              const cell1 = row.insertCell(0);
-              const cell2 = row.insertCell(1);
-              const cell3 = row.insertCell(2);
-
-              cell1.innerHTML = signupId;
-
-              // Create unordered list for emails
-              const emailList = document.createElement("ul");
-              emailList.style.listStyle = "none";
-              emailList.style.padding = "0";
-              emailList.style.margin = "0";
-
-              for (const email of referralData.refers) {
-                const listItem = document.createElement("li");
-                listItem.style.marginBottom = "5px";
-                listItem.style.display = "flex";
-                listItem.style.alignItems = "center";
-                listItem.style.gap = "10px";
-
-                // Create email span
-                const emailSpan = document.createElement("span");
-                emailSpan.textContent = email;
-
-                // Create status indicator
-                const statusSpan = document.createElement("span");
-                const isSignedUp = referralData.signed_up[email];
-                statusSpan.textContent = isSignedUp ? "✓" : "✗";
-                statusSpan.style.color = isSignedUp ? "#5cffd1" : "#f44336";
-                statusSpan.style.fontWeight = "bold";
-
-                // Create delete button
-                const deleteBtn = document.createElement("button");
-                deleteBtn.innerHTML = "×";
-                deleteBtn.style.marginLeft = "auto";
-                deleteBtn.style.padding = "0 5px";
-                deleteBtn.style.cursor = "pointer";
-                deleteBtn.style.border = "none";
-                deleteBtn.style.borderRadius = "3px";
-                deleteBtn.style.backgroundColor = "#ff4444";
-                deleteBtn.style.color = "white";
-
-                deleteBtn.addEventListener("click", () => {
-                  if (
-                    confirm(
-                      `Are you sure you want to delete the referral for ${email}?`
-                    )
-                  ) {
-                    fetch("/api/remove_referral", {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({
-                        signup_id: signupId,
-                        email: email,
-                      }),
-                    }).then((response) => {
-                      if (response.ok) {
-                        listItem.remove();
-                        if (emailList.children.length === 0) {
-                          row.remove();
-                        }
-                      }
-                    });
-                  }
-                });
-
-                listItem.appendChild(emailSpan);
-                listItem.appendChild(statusSpan);
-                listItem.appendChild(deleteBtn);
-                emailList.appendChild(listItem);
-              }
-
-              cell2.appendChild(emailList);
-
-              // Add total count and signup status
-              const totalSignedUp = Object.values(
-                referralData.signed_up
-              ).filter(Boolean).length;
-              const statusSpan = document.createElement("span");
-              statusSpan.textContent = `${totalSignedUp}/${referralData.refers.length} signed up`;
-              statusSpan.style.color =
-                totalSignedUp > 0 ? "#5cffd1" : "#f44336";
-              cell3.appendChild(statusSpan);
-            }
-          });
-      </script>
-      <!-- table with meal form -->
-      <h2>Meal Form</h2>
-      <table id="meal-form">
-        <tr>
-          <th>ID</th>
-          <th>(Preferred) Name</th>
-          <th>Legal Name</th>
-          <th>Sunday Breakfast</th>
-          <th>Saturday Lunch Pizza</th>
-          <th>Saturday Dinner iniBurger</th>
-          <th>Saturday Dinner Dietary</th>
-          <th>Saturday Dinner Side</th>
-        </tr>
-      </table>
-      <script>
-        let cachedAttendees = null;
-
-        fetch("/api/get-attendees")
-          .then((response) => response.json())
-          .then((data) => {
-            cachedAttendees = data;
-            const table = document.getElementById("meal-form");
-            data.forEach((attendee) => {
-              const row = table.insertRow();
-              const cell1 = row.insertCell(0);
-              const cell2 = row.insertCell(1);
-              const cell3 = row.insertCell(2);
-              const cell4 = row.insertCell(3);
-              const cell6 = row.insertCell(4);
-              const cell7 = row.insertCell(5);
-              const cell8 = row.insertCell(6);
-              const cell9 = row.insertCell(7);
-
-              cell1.innerHTML = attendee.id;
-              cell2.innerHTML = attendee.preferredName || '';
-              cell3.innerHTML = attendee.fullName || '';
-
-              // Safely access meal form data with fallbacks
-              const mealForm = attendee.organizerNotes?.mealForm || {};
-              
-              // Sunday Breakfast
-              cell4.innerHTML = mealForm['sunday-breakfast']?.['donuts'] || '';
-              
-              // Saturday Lunch
-              cell6.innerHTML = mealForm['saturday-lunch']?.['pizza'] || '';
-              
-              // Saturday Dinner
-              cell7.innerHTML = mealForm['saturday-dinner']?.['iniburger'] || '';
-              cell8.innerHTML = (mealForm['saturday-dinner']?.['dietary-restrictions'] || []).join(', ');
-              cell9.innerHTML = mealForm['saturday-dinner']?.['side'] || '';
+              const cell = row.insertCell(0);
+              cell.colSpan = 10; // Updated colspan to match new number of columns
+              cell.innerHTML = "Error loading meal form data";
+              cell.style.color = "#f44336";
+              cell.style.textAlign = "center";
             });
-          })
-          .catch(error => {
-            console.error('Error fetching attendees:', error);
-            const table = document.getElementById("meal-form");
-            const row = table.insertRow();
-            const cell = row.insertCell(0);
-            cell.colSpan = 9; // Updated colspan to match new number of columns
-            cell.innerHTML = 'Error loading meal form data';
-            cell.style.color = '#f44336';
-            cell.style.textAlign = 'center';
-          });
-      </script>
-      <h1>Meal Grabber By ID</h1>
-      <div class="meal-grabber-container">
-        <form id="meal-form-id">
-          <label for="attendee-id">Enter Attendee ID:</label>
-          <input type="text" id="attendee-id" name="attendee-id" required />
-          <button type="submit">Submit</button>
-        </form>
-        <div id="result"></div>
+        </script>
       </div>
-      <script>
-        function showAttendeeInfo(attendeeId) {
-          if (!cachedAttendees) {
-            Toastify({
-              text: "Loading attendee data...",
-              duration: 3000,
-              close: true,
-              style: { background: "#333" }
-            }).showToast();
-            return;
-          }
-
-          const attendee = cachedAttendees.find(a => String(a.id) === String(attendeeId));
-          
-          if (attendee) {
-            const mealForm = attendee.organizerNotes?.mealForm || {};
-            
-            const mealInfo = `
-              ID: ${attendee.id}
-              Preferred Name: ${attendee.preferredName || 'N/A'}
-              Legal Name: ${attendee.fullName || 'N/A'}
-              Sunday Breakfast: ${mealForm['sunday-breakfast']?.['donuts'] || 'Not selected'}
-              Sunday Breakfast Dietary: ${(mealForm['sunday-breakfast']?.['dietary-restrictions'] || []).join(', ') || 'None'}
-              Saturday Lunch Pizza: ${mealForm['saturday-lunch']?.['pizza'] || 'Not selected'}
-              Saturday Dinner iniBurger: ${mealForm['saturday-dinner']?.['iniburger'] || 'Not selected'}
-              Saturday Dinner Dietary: ${(mealForm['saturday-dinner']?.['dietary-restrictions'] || []).join(', ') || 'None'}
-              Saturday Dinner Side: ${mealForm['saturday-dinner']?.['side'] || 'Not selected'}
-            `;
-            
-            Toastify({
-              text: mealInfo,
-              duration: 10000,
-              close: true,
-              style: {
-                background: "#333",
-                whiteSpace: "pre-line"
-              }
-            }).showToast();
-
-            // Clear the input field after successful scan
-            document.getElementById('attendee-id').value = '';
-          } else {
-            Toastify({
-              text: "No data found for the given ID",
-              duration: 3000,
-              close: true,
-              style: { background: "#f44336" }
-            }).showToast();
-          }
-        }
-
-        // Handle form submission
-        document.getElementById('meal-form-id').addEventListener('submit', function(event) {
-          event.preventDefault();
-          const attendeeId = document.getElementById('attendee-id').value.trim();
-          showAttendeeInfo(attendeeId);
-        });
-
-        // Handle barcode scanner input
-        document.getElementById('attendee-id').addEventListener('keypress', function(event) {
-          if (event.key === 'Enter') {
-            event.preventDefault(); // Prevent form submission
-            const attendeeId = event.target.value.trim();
-            showAttendeeInfo(attendeeId);
-          }
-        });
-
-        // Auto-focus the input field
-        document.getElementById('attendee-id').focus();
-        
-        // Remove the onclick handler that was keeping focus
-        // document.addEventListener('click', function() {
-        //   document.getElementById('attendee-id').focus();
-        // });
-      </script>
     </div>
   </body>
+  <style>
+    .admin-nav {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .admin-nav-link {
+      padding: 8px 15px;
+      background-color: rgba(0, 0, 0, 0.2);
+      color: #5cffd1;
+      text-decoration: none;
+      border-radius: 5px;
+      transition: background-color 0.2s;
+    }
+
+    .admin-nav-link:hover {
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    /* Waitlist button styles */
+    .approve-btn,
+    .resend-btn {
+      padding: 5px 10px;
+      margin: 2px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+
+    .approve-btn {
+      background-color: #f44336; /* Changed from #477b78 to #f44336 */
+      color: white;
+    }
+
+    .approve-btn:hover {
+      background-color: #ff6b6b; /* Changed from #5a9e9b to #ff6b6b */
+    }
+
+    .resend-btn {
+      background-color: #477b78; /* Changed from #f44336 to #477b78 */
+      color: white;
+    }
+
+    .resend-btn:hover {
+      background-color: #5a9e9b; /* Changed from #ff6b6b to #5a9e9b */
+    }
+
+    .approve-btn:disabled,
+    .reject-btn:disabled {
+      background-color: #cccccc;
+      color: #666666;
+      cursor: not-allowed;
+    }
+
+    /* Random approval form styles */
+    #random-approval-form {
+      margin: 15px 0;
+      padding: 15px;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    #random-approval-form input {
+      padding: 5px 10px;
+      margin: 0 10px;
+      border: 1px solid #477b78;
+      border-radius: 4px;
+    }
+
+    #random-approval-form button {
+      padding: 5px 15px;
+      background-color: #477b78;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #random-approval-form button:hover {
+      background-color: #5a9e9b;
+    }
+
+    #random-result {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    /* Statistics section styling */
+    .statistics-section {
+      margin-top: 30px;
+      margin-bottom: 30px;
+    }
+
+    .stats-overview {
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    .stats-list {
+      list-style-type: none;
+      padding-left: 0;
+    }
+
+    .stats-list li {
+      margin-bottom: 8px;
+    }
+
+    .charts-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: space-between;
+    }
+
+    .chart-wrapper {
+      width: 300px;
+      height: 300px;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .chart-wrapper h3 {
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #5cffd1;
+      font-size: 16px;
+    }
+
+    .chart-wrapper canvas {
+      max-width: 100%;
+      max-height: 250px;
+    }
+  </style>
 </html>

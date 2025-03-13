@@ -75,15 +75,15 @@ function onUserDataLoaded() {
   for (let i = 0; i < nameElements.length; i++) {
     nameElements[i].textContent = userData.preferredName;
   }
-  document.querySelector(".status").textContent = userData.waitlist;
-  if (userData.waitlist === "approved") {
-    document.querySelector("#message").textContent =
-      "We're looking forward to seeing you at the event. Keep an eye on your email for more details! Don't forget to join our Discord server for updates and announcements as well.";
-  } else {
-    document.querySelector("#message").textContent =
-      "You're on the waitlist. We'll send you an email when you're approved. Want to get off the waitlist faster? Get your parents to chaperone! More details on our Discord server.";
-  }
-  if (userData.organizerNotes.mealForm) {
+
+  // Remove waitlist status display
+  // document.querySelector(".status").textContent = userData.waitlist;
+
+  // Replace waitlist-specific messages with a general welcome message
+  document.querySelector("#message").textContent =
+    "We're looking forward to seeing you at the event. Keep an eye on your email for more details! Don't forget to join our Discord server for updates and announcements as well.";
+
+  if (userData.organizerNotes && userData.organizerNotes.mealForm) {
     document.querySelector("#meal-msg").innerHTML =
       "Yay you, you already filled out the meal form! You're good to go for now, but you can change it <a href='/dashboard/meal-form' class='link'><span></span><span>here</span></a>.";
   } else {

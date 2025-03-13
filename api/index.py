@@ -15,6 +15,7 @@ import dotenv
 from flask_session import Session
 from redis import Redis
 import os
+import datetime
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import random
@@ -22,7 +23,7 @@ import random
 
 def send_email(to_email, subject, content):
     message = Mail(
-        from_email="robot@scrapyard.dev",
+        from_email=("adam@scrapyard.dev", "Adam Xu"),
         to_emails=to_email,
         subject=subject,
         html_content=content,
@@ -495,6 +496,15 @@ def admin():
     return render_template("admin.html")
 
 
+@app.route("/admin/meal-grabber")
+def meal_grabber():
+    if "user_id" not in session:
+        return redirect("/")
+    if session["user_id"] not in admin_user_ids:
+        return redirect("/")
+    return render_template("meal-grabber.html")
+
+
 @app.route("/api/list_referrals")
 def list_referrals():
     if "user_id" not in session:
@@ -607,15 +617,7 @@ def user_info():
             ).json()
             user_id = session["user_id"]
             attendee = next((a for a in response if a.get("id") == user_id), None)
-            # check organizer notes for waitlist status, otherwise mark as pending
-            if attendee and "organizerNotes" in attendee:
-                if "waitlist" in attendee["organizerNotes"]:
-                    attendee["waitlist"] = attendee["organizerNotes"]["waitlist"]
-                else:
-                    attendee["waitlist"] = "approved"
-            else:
-                attendee = {"waitlist": "pending"}
-            return jsonify(attendee)
+            return jsonify(attendee or {})
         except Exception as e:
             return (
                 jsonify({"error": "Failed to fetch attendee data", "details": str(e)}),
@@ -683,127 +685,159 @@ def get_attendees():
     return jsonify(response.json())
 
 
-@app.route("/api/waitlist/approve", methods=["POST"])
-def accept_waitlist():
-    if not "user_id" in session:
-        return redirect("/")
+@app.route("/api/track-meal-pickup", methods=["POST"])
+def track_meal_pickup():
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in"}), 401
     if session["user_id"] not in admin_user_ids:
-        return redirect("/")
+        return jsonify({"error": "Unauthorized"}), 403
+
     data = request.json
     attendee_id = data.get("attendee_id")
+    meal_type = data.get("meal_type")
+    pickup_status = data.get("pickup_status", True)  # Default to True (picked up)
+
+    if not attendee_id or not meal_type:
+        return jsonify({"error": "Missing required fields"}), 400
+
     headers = {"Authorization": f"Bearer {API_KEY}"}
+
+    # Get attendee data
     response = requests.get(
         f"{ATTENDEE_API_URL}?event={EVENT_SLUG}",
         headers=headers,
     ).json()
-    attendee = next((a for a in response if a.get("id") == attendee_id), None)
-    if attendee:
-        organizer_notes = attendee.get("organizerNotes", {})
-        organizer_notes["waitlist"] = "approved"
-        update_response = requests.post(
-            f"{ATTENDEE_API_URL}/{attendee['id']}/edit?event={EVENT_SLUG}",
-            headers=headers,
-            json=organizer_notes,
-        )
-        if update_response.status_code == 200:
-            # send email
-            message = f"""
-            <p>Hey {attendee['preferredName']},</p>
-            <p>Guess what? You're off the waitlist for Scrapyard Silicon Valley!</p>
-            <p>You're all set to attend the event on March 15-16, 2025. The event will start at 10:00am with check-in starting at 9:30am.</p>
-            <p>I'm looking forward to seeing you there! If you're not able to make it, please send a reply to this email <b>ASAP</b> so we can make room for someone else.</p>
-            <p>If you have any questions, feel free to reply to this email.</p>
-            <p>Thanks,<br>Adam Xu<br>Organizer, <a href="https://scrapyard.hackclub.com/silicon-valley?refer=email-footer">Scrapyard Silicon Valley</a><br><img src="https://cdn.hack.ngo/slackcdn/df1288fdda61fc585ea2f48478f1d5a7.png" width="200" height="auto" /></p>
-            """
-            subject = "Scrapyard Silicon Valley: You're off the waitlist!"
-            send_email(attendee["email"], subject, message)
-            return jsonify({"success": True})
-        else:
-            return (
-                jsonify(
-                    {
-                        "error": "Failed to update attendee",
-                        "details": update_response.text,
-                    }
-                ),
-                500,
-            )
-    else:
+
+    attendee = next((a for a in response if str(a.get("id")) == str(attendee_id)), None)
+    if not attendee:
         return jsonify({"error": "Attendee not found"}), 404
 
+    # Update organizer notes with meal pickup status
+    organizer_notes = attendee.get("organizerNotes", {})
+    if not organizer_notes:
+        organizer_notes = {}
 
-@app.route("/api/waitlist/reject", methods=["POST"])
-def reject_waitlist():
-    if not "user_id" in session:
-        return redirect("/")
+    meal_pickups = organizer_notes.get("mealPickups", {})
+    if not meal_pickups:
+        meal_pickups = {}
+
+    # Update the pickup status for the specified meal
+    if pickup_status:
+        meal_pickups[meal_type] = True
+    else:
+        # If we're marking as not picked up, set to False
+        meal_pickups[meal_type] = False
+
+    organizer_notes["mealPickups"] = meal_pickups
+
+    # Update the attendee record - use the same method as other endpoints
+    update_response = requests.post(
+        f"{ATTENDEE_API_URL}/{attendee_id}/edit?event={EVENT_SLUG}",
+        headers=headers,
+        json=organizer_notes,
+    )
+
+    if update_response.status_code != 200:
+        return (
+            jsonify(
+                {
+                    "error": "Failed to update meal pickup status",
+                    "details": update_response.text,
+                }
+            ),
+            500,
+        )
+
+    # Return success response with attendee name for the toast notification
+    return jsonify(
+        {
+            "success": True,
+            "attendee": attendee.get("preferredName")
+            or attendee.get("fullName")
+            or "Attendee",
+            "meal_type": meal_type,
+            "picked_up": pickup_status,
+        }
+    )
+
+
+# Waitlist-related API endpoints
+@app.route("/api/approve", methods=["POST"])
+def approve():
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in"}), 401
     if session["user_id"] not in admin_user_ids:
-        return redirect("/")
+        return jsonify({"error": "Unauthorized"}), 403
+
     data = request.json
     attendee_id = data.get("attendee_id")
-    reason = data.get("reason")
+    resend = data.get("resend", False)
+
+    if not attendee_id:
+        return jsonify({"error": "Missing attendee_id"}), 400
+
     headers = {"Authorization": f"Bearer {API_KEY}"}
+
+    # Get attendee data
     response = requests.get(
         f"{ATTENDEE_API_URL}?event={EVENT_SLUG}",
         headers=headers,
     ).json()
+
     attendee = next((a for a in response if a.get("id") == attendee_id), None)
-    if attendee:
-        organizer_notes = attendee.get("organizerNotes", {})
-        organizer_notes["waitlist"] = "rejected"
-        organizer_notes["waitlist_rejection_reason"] = reason
-        update_response = requests.post(
-            f"{ATTENDEE_API_URL}/{attendee['id']}/edit?event={EVENT_SLUG}",
-            headers=headers,
-            json=organizer_notes,
-        )
-        if update_response.status_code == 200:
-            return jsonify({"success": True})
-        else:
-            return (
-                jsonify(
-                    {
-                        "error": "Failed to update attendee",
-                        "details": update_response.text,
-                    }
-                ),
-                500,
-            )
-    else:
+    if not attendee:
         return jsonify({"error": "Attendee not found"}), 404
 
-
-@app.route("/api/waitlist/approve-random", methods=["POST"])
-def approve_random_waitlist():
-    if not "user_id" in session:
-        return redirect("/")
-    if session["user_id"] not in admin_user_ids:
-        return redirect("/")
-    data = request.json
-    num_to_approve = int(data.get("numToApprove"))
-    headers = {"Authorization": f"Bearer {API_KEY}"}
-    response = requests.get(
-        f"{ATTENDEE_API_URL}?event={EVENT_SLUG}",
-        headers=headers,
-    ).json()
-    pending_attendees = [
-        a
-        for a in response
-        if a.get("organizerNotes", {}).get("waitlist", "pending") == "pending"
-    ]
-    if len(pending_attendees) < num_to_approve:
-        return "Not enough pending attendees", 400
-    approved_attendees = random.sample(pending_attendees, num_to_approve)
-    for attendee in approved_attendees:
+    # If this is not just a resend request, update the status
+    if not resend:
+        # Update organizer notes with waitlist status
         organizer_notes = attendee.get("organizerNotes", {})
         organizer_notes["waitlist"] = "approved"
+
+        # Save back to API
         update_response = requests.post(
             f"{ATTENDEE_API_URL}/{attendee['id']}/edit?event={EVENT_SLUG}",
             headers=headers,
             json=organizer_notes,
         )
+
         if update_response.status_code != 200:
-            return "Failed to update attendee", 500
-    return "Approved randomly successfully. Refresh to see changes.", 200
+            return (
+                jsonify(
+                    {
+                        "error": "Failed to update waitlist status",
+                        "details": update_response.text,
+                    }
+                ),
+                500,
+            )
+
+    # Send approval email (for both new approvals and resends)
+    try:
+        send_email(
+            attendee["email"],
+            "[Important] Scrapyard Silicon Valley Info",
+            render_template("emails/approval_email.html", attendee=attendee),
+        )
+    except Exception as e:
+        print(f"Failed to send approval email: {e}")
+        if resend:
+            return (
+                jsonify(
+                    {
+                        "error": "Failed to send email",
+                        "details": str(e),
+                    }
+                ),
+                500,
+            )
+
+    return jsonify(
+        {
+            "success": True,
+            "attendee": attendee["preferredName"] or attendee["fullName"],
+        }
+    )
 
 
 # @app.route("/test-success")
