@@ -840,6 +840,71 @@ def approve():
     )
 
 
+@app.route("/api/send-to-all", methods=["POST"])
+def send_to_all():
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in"}), 401
+    if session["user_id"] not in admin_user_ids:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+
+    # Get all attendees
+    response = requests.get(
+        f"{ATTENDEE_API_URL}?event={EVENT_SLUG}",
+        headers=headers,
+    ).json()
+
+    # Filter for waitlisted attendees (those who never received the info)
+    waitlisted_attendees = [
+        a
+        for a in response
+        if a.get("organizerNotes", {}).get("waitlist") == "waitlisted"
+    ]
+
+    success_count = 0
+    failed_emails = []
+
+    # Send emails and update status to approved
+    for attendee in waitlisted_attendees:
+        try:
+            # Update status to approved
+            organizer_notes = attendee.get("organizerNotes", {})
+            organizer_notes["waitlist"] = "approved"
+
+            # Save back to API
+            update_response = requests.post(
+                f"{ATTENDEE_API_URL}/{attendee['id']}/edit?event={EVENT_SLUG}",
+                headers=headers,
+                json=organizer_notes,
+            )
+
+            if update_response.status_code != 200:
+                print(f"Failed to update status for {attendee['email']}")
+                failed_emails.append(attendee["email"])
+                continue
+
+            # Send approval email
+            send_email(
+                attendee["email"],
+                "[Important] Scrapyard Silicon Valley Info",
+                render_template("emails/approval_email.html", attendee=attendee),
+            )
+            success_count += 1
+        except Exception as e:
+            print(f"Failed to process {attendee['email']}: {e}")
+            failed_emails.append(attendee["email"])
+
+    return jsonify(
+        {
+            "success": True,
+            "total": len(waitlisted_attendees),
+            "sent": success_count,
+            "failed": failed_emails,
+        }
+    )
+
+
 # @app.route("/test-success")
 # def test_success():
 #     return render_template("success.html")

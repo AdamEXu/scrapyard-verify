@@ -43,6 +43,11 @@
     <div class="container2">
       <div class="container">
         <h1>Admin Panel</h1>
+        <div class="admin-actions">
+          <button id="send-to-all-btn" class="action-btn">
+            Send Info Email to All Waitlisted
+          </button>
+        </div>
         <div class="admin-nav">
           <a href="/admin" class="admin-nav-link">Dashboard</a>
           <a href="/admin/meal-grabber" class="admin-nav-link">Meal Grabber</a>
@@ -1482,4 +1487,84 @@
       max-height: 250px;
     }
   </style>
+  <style>
+    .admin-actions {
+      margin: 20px 0;
+    }
+
+    .action-btn {
+      background-color: #5cffd1;
+      color: #000;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .action-btn:hover {
+      background-color: #4ad8b0;
+    }
+
+    .action-btn:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+  </style>
 </html>
+<script>
+  // Add event listener for the Send to All button
+  document
+    .getElementById("send-to-all-btn")
+    .addEventListener("click", function () {
+      if (
+        confirm(
+          "Are you sure you want to send the info email to ALL waitlisted attendees? This will mark them as approved."
+        )
+      ) {
+        // Disable the button to prevent double-clicks
+        this.disabled = true;
+        this.textContent = "Sending emails...";
+
+        fetch("/api/send-to-all", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              Toastify({
+                text: `Sent emails to ${data.sent}/${data.total} waitlisted attendees`,
+                duration: 5000,
+                close: true,
+                style: { background: "#5cffd1" },
+              }).showToast();
+
+              if (data.failed.length > 0) {
+                console.error("Failed to send emails to:", data.failed);
+                alert(
+                  `Failed to send emails to ${data.failed.length} attendees. Check console for details.`
+                );
+              }
+
+              // Refresh the page after 2 seconds to show updated statuses
+              setTimeout(() => {
+                location.reload();
+              }, 2000);
+            } else {
+              alert("Error: " + (data.error || "Failed to send emails"));
+              this.disabled = false;
+              this.textContent = "Send Info Email to All Waitlisted";
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Network error. Please try again.");
+            this.disabled = false;
+            this.textContent = "Send Info Email to All Waitlisted";
+          });
+      }
+    });
+</script>
