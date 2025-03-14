@@ -1280,6 +1280,7 @@
             <th>Saturday Dinner Dietary</th>
             <th>Saturday Dinner Side</th>
             <th>Allergies & Medical Concerns</th>
+            <th>Actions</th>
           </tr>
         </table>
         <script>
@@ -1301,6 +1302,7 @@
                 const cell8 = row.insertCell(6);
                 const cell9 = row.insertCell(7);
                 const cell10 = row.insertCell(8);
+                const cell11 = row.insertCell(9);
 
                 cell1.innerHTML = attendee.id;
                 cell2.innerHTML = attendee.preferredName || "";
@@ -1326,6 +1328,17 @@
 
                 // Allergies and Medical Concerns
                 cell10.innerHTML = attendee.allergiesAndMedicalConcerns || "";
+
+                // Add Edit Meal Form button
+                const editButton = document.createElement("button");
+                editButton.textContent = "Edit Meal Form";
+                editButton.className = "edit-meal-btn";
+                editButton.setAttribute("data-id", attendee.id);
+                editButton.setAttribute(
+                  "data-name",
+                  attendee.preferredName || attendee.fullName || "Attendee"
+                );
+                cell11.appendChild(editButton);
               });
             })
             .catch((error) => {
@@ -1333,7 +1346,7 @@
               const table = document.getElementById("meal-form");
               const row = table.insertRow();
               const cell = row.insertCell(0);
-              cell.colSpan = 10; // Updated colspan to match new number of columns
+              cell.colSpan = 11; // Updated colspan to match new number of columns
               cell.innerHTML = "Error loading meal form data";
               cell.style.color = "#f44336";
               cell.style.textAlign = "center";
@@ -1341,6 +1354,360 @@
         </script>
       </div>
     </div>
+    <!-- Modal for editing meal form -->
+    <div id="edit-meal-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Edit Meal Form for <span id="modal-attendee-name"></span></h2>
+          <span class="close">&times;</span>
+        </div>
+        <div id="modal-form-content">
+          <form id="edit-meal-form">
+            <input type="hidden" id="attendee-id" name="attendee-id" />
+
+            <!-- Sunday Breakfast -->
+            <div class="form-group">
+              <label for="sunday-breakfast-donuts"
+                >Sunday Breakfast (Donuts)</label
+              >
+              <select
+                id="sunday-breakfast-donuts"
+                name="sunday-breakfast-donuts"
+              >
+                <option value="">Not selected</option>
+                <option value="glazed">Glazed</option>
+                <option value="chocolate">Chocolate</option>
+                <option value="sprinkles">Sprinkles</option>
+                <option value="jelly">Jelly</option>
+                <option value="skip">Skip</option>
+              </select>
+            </div>
+
+            <!-- Sunday Breakfast Dietary Restrictions -->
+            <div class="form-group">
+              <label>Sunday Breakfast Dietary Restrictions</label>
+              <div class="checkbox-group">
+                <div class="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id="sunday-breakfast-gluten-free"
+                    name="sunday-breakfast-dietary-restrictions"
+                    value="gluten-free"
+                  />
+                  <label for="sunday-breakfast-gluten-free">Gluten Free</label>
+                </div>
+                <div class="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id="sunday-breakfast-lactose-intolerant"
+                    name="sunday-breakfast-dietary-restrictions"
+                    value="lactose-intolerant"
+                  />
+                  <label for="sunday-breakfast-lactose-intolerant"
+                    >Lactose Intolerant</label
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Saturday Lunch -->
+            <div class="form-group">
+              <label for="saturday-lunch-pizza">Saturday Lunch (Pizza)</label>
+              <select id="saturday-lunch-pizza" name="saturday-lunch-pizza">
+                <option value="">Not selected</option>
+                <option value="cheese">Cheese</option>
+                <option value="pepperoni">Pepperoni</option>
+                <option value="veggie">Veggie</option>
+                <option value="bbq-chicken">BBQ Chicken</option>
+                <option value="gluten-free">Gluten Free</option>
+                <option value="skip">Skip</option>
+              </select>
+            </div>
+
+            <!-- Saturday Dinner -->
+            <div class="form-group">
+              <label for="saturday-dinner-iniburger"
+                >Saturday Dinner (iniBurger)</label
+              >
+              <select
+                id="saturday-dinner-iniburger"
+                name="saturday-dinner-iniburger"
+              >
+                <option value="">Not selected</option>
+                <option value="classic-burger">Classic Burger</option>
+                <option value="cheeseburger">Cheeseburger</option>
+                <option value="bacon-cheeseburger">Bacon Cheeseburger</option>
+                <option value="gardenburger">Gardenburger (Vegetarian)</option>
+                <option value="falafel-malibu">
+                  Falafel Malibu (Vegetarian)
+                </option>
+                <option value="skip">Skip</option>
+              </select>
+            </div>
+
+            <!-- Saturday Dinner Dietary Restrictions -->
+            <div class="form-group">
+              <label>Saturday Dinner Dietary Restrictions</label>
+              <div class="checkbox-group">
+                <div class="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id="saturday-dinner-gluten-free"
+                    name="saturday-dinner-dietary-restrictions"
+                    value="gluten-free"
+                  />
+                  <label for="saturday-dinner-gluten-free">Gluten Free</label>
+                </div>
+                <div class="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id="saturday-dinner-lactose-intolerant"
+                    name="saturday-dinner-dietary-restrictions"
+                    value="lactose-intolerant"
+                  />
+                  <label for="saturday-dinner-lactose-intolerant"
+                    >Lactose Intolerant</label
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Saturday Dinner Side -->
+            <div class="form-group">
+              <label for="saturday-dinner-side">Saturday Dinner Side</label>
+              <select id="saturday-dinner-side" name="saturday-dinner-side">
+                <option value="">Not selected</option>
+                <option value="fries">Fries</option>
+                <option value="sweet-potato-fries">Sweet Potato Fries</option>
+                <option value="onion-rings">Onion Rings</option>
+                <option value="skip">Skip</option>
+              </select>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="cancel-btn" id="cancel-edit">
+                Cancel
+              </button>
+              <button type="button" class="save-btn" id="save-meal-form">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Get the modal and related elements
+      const modal = document.getElementById("edit-meal-modal");
+      const closeBtn = document.querySelector(".close");
+      const cancelBtn = document.getElementById("cancel-edit");
+      const saveBtn = document.getElementById("save-meal-form");
+      const attendeeNameSpan = document.getElementById("modal-attendee-name");
+      const attendeeIdInput = document.getElementById("attendee-id");
+
+      // Add event listener for Edit Meal Form buttons
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("edit-meal-btn")) {
+          const attendeeId = event.target.getAttribute("data-id");
+          const attendeeName = event.target.getAttribute("data-name");
+          openMealFormModal(attendeeId, attendeeName);
+        }
+      });
+
+      // Close the modal when clicking the close button or cancel button
+      closeBtn.onclick = function () {
+        modal.style.display = "none";
+      };
+
+      cancelBtn.onclick = function () {
+        modal.style.display = "none";
+      };
+
+      // Close the modal when clicking outside of it
+      window.onclick = function (event) {
+        if (event.target === modal) {
+          modal.style.display = "none";
+        }
+      };
+
+      // Function to open the meal form modal and populate it with attendee data
+      function openMealFormModal(attendeeId, attendeeName) {
+        // Set the attendee name and ID in the modal
+        attendeeNameSpan.textContent = attendeeName;
+        attendeeIdInput.value = attendeeId;
+
+        // Find the attendee in the cached data
+        const attendee = cachedAttendees.find((a) => a.id === attendeeId);
+        if (!attendee) {
+          alert("Attendee not found!");
+          return;
+        }
+
+        // Get the meal form data or initialize an empty object
+        const mealForm = attendee.organizerNotes?.mealForm || {};
+
+        // Populate the form fields
+
+        // Sunday Breakfast
+        const sundayBreakfastSelect = document.getElementById(
+          "sunday-breakfast-donuts"
+        );
+        sundayBreakfastSelect.value =
+          mealForm["sunday-breakfast"]?.["donuts"] || "";
+
+        // Sunday Breakfast Dietary Restrictions
+        const sundayBreakfastDietaryRestrictions =
+          mealForm["sunday-breakfast"]?.["dietary-restrictions"] || [];
+        document.getElementById("sunday-breakfast-gluten-free").checked =
+          sundayBreakfastDietaryRestrictions.includes("gluten-free");
+        document.getElementById("sunday-breakfast-lactose-intolerant").checked =
+          sundayBreakfastDietaryRestrictions.includes("lactose-intolerant");
+
+        // Saturday Lunch
+        const saturdayLunchSelect = document.getElementById(
+          "saturday-lunch-pizza"
+        );
+        saturdayLunchSelect.value = mealForm["saturday-lunch"]?.["pizza"] || "";
+
+        // Saturday Dinner
+        const saturdayDinnerSelect = document.getElementById(
+          "saturday-dinner-iniburger"
+        );
+        saturdayDinnerSelect.value =
+          mealForm["saturday-dinner"]?.["iniburger"] || "";
+
+        // Saturday Dinner Dietary Restrictions
+        const saturdayDinnerDietaryRestrictions =
+          mealForm["saturday-dinner"]?.["dietary-restrictions"] || [];
+        document.getElementById("saturday-dinner-gluten-free").checked =
+          saturdayDinnerDietaryRestrictions.includes("gluten-free");
+        document.getElementById("saturday-dinner-lactose-intolerant").checked =
+          saturdayDinnerDietaryRestrictions.includes("lactose-intolerant");
+
+        // Saturday Dinner Side
+        const saturdayDinnerSideSelect = document.getElementById(
+          "saturday-dinner-side"
+        );
+        saturdayDinnerSideSelect.value =
+          mealForm["saturday-dinner"]?.["side"] || "";
+
+        // Show the modal
+        modal.style.display = "block";
+      }
+
+      // Function to save the meal form data
+      saveBtn.onclick = function () {
+        // Get the attendee ID
+        const attendeeId = attendeeIdInput.value;
+
+        // Collect the form data
+        const formData = {
+          "sunday-breakfast": {
+            donuts: document.getElementById("sunday-breakfast-donuts").value,
+            "dietary-restrictions": [],
+          },
+          "saturday-lunch": {
+            pizza: document.getElementById("saturday-lunch-pizza").value,
+          },
+          "saturday-dinner": {
+            iniburger: document.getElementById("saturday-dinner-iniburger")
+              .value,
+            side: document.getElementById("saturday-dinner-side").value,
+            "dietary-restrictions": [],
+          },
+        };
+
+        // Add dietary restrictions if checked
+        if (document.getElementById("sunday-breakfast-gluten-free").checked) {
+          formData["sunday-breakfast"]["dietary-restrictions"].push(
+            "gluten-free"
+          );
+        }
+        if (
+          document.getElementById("sunday-breakfast-lactose-intolerant").checked
+        ) {
+          formData["sunday-breakfast"]["dietary-restrictions"].push(
+            "lactose-intolerant"
+          );
+        }
+        if (document.getElementById("saturday-dinner-gluten-free").checked) {
+          formData["saturday-dinner"]["dietary-restrictions"].push(
+            "gluten-free"
+          );
+        }
+        if (
+          document.getElementById("saturday-dinner-lactose-intolerant").checked
+        ) {
+          formData["saturday-dinner"]["dietary-restrictions"].push(
+            "lactose-intolerant"
+          );
+        }
+
+        // Disable the save button to prevent double submission
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Saving...";
+
+        // Send the data to the server
+        fetch("/api/admin-set-meal-form", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            attendee_id: attendeeId,
+            meal_form: formData,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              // Show success message
+              Toastify({
+                text: `Successfully updated meal form for ${attendeeNameSpan.textContent}`,
+                duration: 3000,
+                close: true,
+                style: { background: "#5cffd1" },
+              }).showToast();
+
+              // Close the modal
+              modal.style.display = "none";
+
+              // Refresh the page to show updated data
+              setTimeout(() => {
+                location.reload();
+              }, 1500);
+            } else {
+              // Show error message
+              Toastify({
+                text: data.error || "Failed to update meal form",
+                duration: 3000,
+                close: true,
+                style: { background: "#f44336" },
+              }).showToast();
+
+              // Re-enable the save button
+              saveBtn.disabled = false;
+              saveBtn.textContent = "Save Changes";
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+
+            // Show error message
+            Toastify({
+              text: "Network error. Please try again.",
+              duration: 3000,
+              close: true,
+              style: { background: "#f44336" },
+            }).showToast();
+
+            // Re-enable the save button
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save Changes";
+          });
+      };
+    </script>
   </body>
   <style>
     .admin-nav {
@@ -1509,6 +1876,145 @@
     .action-btn:disabled {
       background-color: #cccccc;
       cursor: not-allowed;
+    }
+
+    /* Edit Meal Form button styles */
+    .edit-meal-btn {
+      background-color: #477b78;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+
+    .edit-meal-btn:hover {
+      background-color: #5a9e9b;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-content {
+      background-color: #1e1e1e;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #477b78;
+      border-radius: 8px;
+      width: 80%;
+      max-width: 800px;
+      max-height: 80vh;
+      overflow-y: auto;
+      color: white;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      color: #5cffd1;
+    }
+
+    .close {
+      color: #aaa;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close:hover {
+      color: #5cffd1;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #5cffd1;
+    }
+
+    .form-group select,
+    .form-group input[type="checkbox"] {
+      background-color: #333;
+      color: white;
+      border: 1px solid #555;
+      padding: 8px 12px;
+      border-radius: 4px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .form-group .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group .checkbox-item input[type="checkbox"] {
+      width: auto;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .form-actions button {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .save-btn {
+      background-color: #5cffd1;
+      color: #000;
+    }
+
+    .save-btn:hover {
+      background-color: #4ad8b0;
+    }
+
+    .cancel-btn {
+      background-color: #666;
+      color: white;
+    }
+
+    .cancel-btn:hover {
+      background-color: #888;
     }
   </style>
 </html>

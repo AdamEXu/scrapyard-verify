@@ -626,42 +626,55 @@ def user_info():
     return jsonify({"error": "Unauthorized"}), 401
 
 
-@app.route("/api/set-meal-form", methods=["POST"])
-def set_meal_form():
+@app.route("/api/admin-set-meal-form", methods=["POST"])
+def admin_set_meal_form():
     if "user_id" not in session:
         return jsonify({"error": "Not logged in"}), 401
+    if session["user_id"] not in admin_user_ids:
+        return jsonify({"error": "Unauthorized"}), 403
 
     data = request.json
+    attendee_id = data.get("attendee_id")
+    meal_form = data.get("meal_form")
+
+    if not attendee_id or not meal_form:
+        return jsonify({"error": "Missing attendee_id or meal_form"}), 400
+
     headers = {"Authorization": f"Bearer {API_KEY}"}
 
-    # Get current user's data
+    # Get attendee data
     response = requests.get(
         f"{ATTENDEE_API_URL}?event={EVENT_SLUG}",
         headers=headers,
     ).json()
 
-    attendee = next((a for a in response if a.get("id") == session["user_id"]), None)
+    attendee = next((a for a in response if a.get("id") == attendee_id), None)
     if not attendee:
         return jsonify({"error": "Attendee not found"}), 404
 
     # Update organizer notes with meal form data
     organizer_notes = attendee.get("organizerNotes", {})
-    organizer_notes["mealForm"] = data
+    organizer_notes["mealForm"] = meal_form
 
     # Save back to API
     update_response = requests.post(
-        f"{ATTENDEE_API_URL}/{attendee['id']}/edit?event={EVENT_SLUG}",
+        f"{ATTENDEE_API_URL}/{attendee_id}/edit?event={EVENT_SLUG}",
         headers=headers,
         json=organizer_notes,
     )
 
     if update_response.status_code == 200:
-        return jsonify({"success": True})
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Successfully updated meal form for {attendee.get('preferredName') or attendee.get('fullName')}",
+            }
+        )
     else:
         return (
             jsonify(
                 {
-                    "error": "Failed to update preferences",
+                    "error": "Failed to update meal form",
                     "details": update_response.text,
                 }
             ),
@@ -682,7 +695,22 @@ def get_attendees():
     )
     if response.status_code != 200:
         return "Failed to fetch signups", 500
-    return jsonify(response.json())
+
+    # Get all attendees
+    attendees = response.json()
+
+    # Remove duplicates, keeping the first instance of each attendee
+    # Use a dictionary to track seen emails (case-insensitive)
+    seen_emails = {}
+    unique_attendees = []
+
+    for attendee in attendees:
+        email = attendee.get("email", "").lower()
+        if email and email not in seen_emails:
+            seen_emails[email] = True
+            unique_attendees.append(attendee)
+
+    return jsonify(unique_attendees)
 
 
 @app.route("/api/track-meal-pickup", methods=["POST"])
