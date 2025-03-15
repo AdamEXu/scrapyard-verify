@@ -85,10 +85,10 @@ function onUserDataLoaded() {
 
   if (userData.organizerNotes && userData.organizerNotes.mealForm) {
     document.querySelector("#meal-msg").innerHTML =
-      "Yay you, you already filled out the meal form! You're good to go for now, but you can change it <a href='/dashboard/meal-form' class='link'><span></span><span>here</span></a>.";
+      "Yay you, you already filled out the meal form! Looks like somebody is getting their preferred meal choice! As the meal form has closed, you cannot change your meal preferences anymore.";
   } else {
     document.querySelector("#meal-msg").innerHTML =
-      "You haven't filled out the meal form yet. Please do so <a href='/dashboard/meal-form' class='link'><span></span><span>here</span></a> or you won't get any food.";
+      "You haven't filled out the meal form yet. Unfortunately, the form has closed. We will accommodate you on the day of the event, but cannot guarantee that we can accommodate your dietary restrictions.";
   }
 }
 
