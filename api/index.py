@@ -821,6 +821,63 @@ def get_meal_pickups(attendee_id):
     })
 
 
+@app.route("/api/lookup-by-scrapyard-id/<scrapyard_id>", methods=["GET"])
+def lookup_by_scrapyard_id(scrapyard_id):
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in"}), 401
+    if session["user_id"] not in admin_user_ids:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    if not scrapyard_id:
+        return jsonify({"error": "Missing scrapyard_id"}), 400
+
+    try:
+        # Fetch the CSV file from Slack
+        csv_url = "https://files.slack.com/files-pri/T0266FRGM-F08J0FF9FMJ/users.csv?pub_secret=7eaaacbee2"
+        csv_response = requests.get(csv_url)
+
+        if csv_response.status_code != 200:
+            return jsonify({"error": "Failed to fetch user mapping CSV"}), 500
+
+        # Parse the CSV content
+        csv_content = csv_response.text
+        csv_lines = csv_content.strip().split('\n')
+
+        # Find the email for the given scrapyard_id
+        email = None
+        for line in csv_lines[1:]:  # Skip header line
+            parts = line.split(',')
+            if len(parts) >= 3 and parts[0].strip() == str(scrapyard_id).strip():
+                email = parts[2].strip()
+                break
+
+        if not email:
+            return jsonify({"error": f"No email found for scrapyard_id: {scrapyard_id}"}), 404
+
+        # Now use the email to find the attendee in the system
+        headers = {"Authorization": f"Bearer {API_KEY}"}
+        response = requests.get(
+            f"{ATTENDEE_API_URL}?event={EVENT_SLUG}",
+            headers=headers,
+        ).json()
+
+        attendee = next((a for a in response if a.get("email", "").lower() == email.lower()), None)
+        if not attendee:
+            return jsonify({"error": f"No attendee found with email: {email}"}), 404
+
+        # Return the attendee ID and basic info
+        return jsonify({
+            "success": True,
+            "attendee_id": attendee["id"],
+            "name": attendee.get("preferredName") or attendee.get("fullName"),
+            "email": attendee["email"]
+        })
+
+    except Exception as e:
+        print(f"Error in lookup-by-scrapyard-id: {e}")
+        return jsonify({"error": f"Error processing request: {str(e)}"}), 500
+
+
 # Waitlist-related API endpoints
 @app.route("/api/approve", methods=["POST"])
 def approve():

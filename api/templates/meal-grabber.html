@@ -303,39 +303,124 @@
         return parts[parts.length - 1];
       }
 
+      // Function to check if the input is a Scrapyard URL
+      function isScrapyardUrl(input) {
+        return (
+          input.includes("scrapyard.dev/user/") ||
+          input.includes("scrapyard.dev/users/")
+        );
+      }
+
+      // Function to extract the Scrapyard ID from a URL
+      function extractScrapyardId(url) {
+        const parts = url.split("/");
+        return parts[parts.length - 1];
+      }
+
+      // Function to lookup an attendee by Scrapyard ID
+      async function lookupByScrapyardId(scrapyardId) {
+        try {
+          const response = await fetch(
+            `/api/lookup-by-scrapyard-id/${scrapyardId}`
+          );
+          const data = await response.json();
+
+          if (data.success) {
+            return data.attendee_id;
+          } else {
+            throw new Error(data.error || "Failed to lookup attendee");
+          }
+        } catch (error) {
+          console.error("Error looking up Scrapyard ID:", error);
+          Toastify({
+            text: error.message || "Error looking up Scrapyard ID",
+            duration: 3000,
+            close: true,
+            style: { background: "#f44336" },
+          }).showToast();
+          return null;
+        }
+      }
+
       // Handle form submission
       document
         .getElementById("meal-form-id")
-        .addEventListener("submit", function (event) {
+        .addEventListener("submit", async function (event) {
           event.preventDefault();
           const inputValue = document
             .getElementById("attendee-id")
             .value.trim();
           console.log("Form submission - original input:", inputValue);
-          // Extract ID if it's a URL
-          const attendeeId = inputValue.includes("/")
-            ? extractIdFromUrl(inputValue)
-            : inputValue;
-          console.log("Form submission - extracted ID:", attendeeId);
-          showAttendeeInfo(attendeeId);
+
+          // Process the input value
+          await processInput(inputValue);
         });
 
       // Handle barcode scanner input
       document
         .getElementById("attendee-id")
-        .addEventListener("keypress", function (event) {
+        .addEventListener("keypress", async function (event) {
           if (event.key === "Enter") {
             event.preventDefault(); // Prevent form submission
             const inputValue = event.target.value.trim();
             console.log("Keypress - original input:", inputValue);
-            // Extract ID if it's a URL
-            const attendeeId = inputValue.includes("/")
-              ? extractIdFromUrl(inputValue)
-              : inputValue;
-            console.log("Keypress - extracted ID:", attendeeId);
-            showAttendeeInfo(attendeeId);
+
+            // Process the input value
+            await processInput(inputValue);
           }
         });
+
+      // Function to process input and determine the correct ID to use
+      async function processInput(inputValue) {
+        // Show loading message
+        document.getElementById("meal-info-display").innerHTML = `
+          <div class="loading-message">
+            <h3>Processing input...</h3>
+          </div>
+        `;
+
+        try {
+          let attendeeId;
+
+          // Check if it's a Scrapyard URL
+          if (isScrapyardUrl(inputValue)) {
+            // Extract the Scrapyard ID
+            const scrapyardId = extractScrapyardId(inputValue);
+            console.log("Extracted Scrapyard ID:", scrapyardId);
+
+            // Look up the attendee ID using the Scrapyard ID
+            attendeeId = await lookupByScrapyardId(scrapyardId);
+
+            if (!attendeeId) {
+              // If lookup failed, show error message
+              document.getElementById("meal-info-display").innerHTML = `
+                <div class="error-message">
+                  <h3>Could not find attendee for Scrapyard ID: ${scrapyardId}</h3>
+                </div>
+              `;
+              return;
+            }
+          } else if (inputValue.includes("/")) {
+            // It's some other URL, extract the last segment
+            attendeeId = extractIdFromUrl(inputValue);
+          } else {
+            // It's a direct ID
+            attendeeId = inputValue;
+          }
+
+          console.log("Final attendee ID to use:", attendeeId);
+          showAttendeeInfo(attendeeId);
+        } catch (error) {
+          console.error("Error processing input:", error);
+          document.getElementById("meal-info-display").innerHTML = `
+            <div class="error-message">
+              <h3>Error processing input: ${
+                error.message || "Unknown error"
+              }</h3>
+            </div>
+          `;
+        }
+      }
 
       // Auto-focus the input field
       document.getElementById("attendee-id").focus();
