@@ -789,6 +789,38 @@ def track_meal_pickup():
     )
 
 
+@app.route("/api/get-meal-pickups/<attendee_id>", methods=["GET"])
+def get_meal_pickups(attendee_id):
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in"}), 401
+    if session["user_id"] not in admin_user_ids:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    if not attendee_id:
+        return jsonify({"error": "Missing attendee_id"}), 400
+
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+
+    # Get attendee data
+    response = requests.get(
+        f"{ATTENDEE_API_URL}?event={EVENT_SLUG}",
+        headers=headers,
+    ).json()
+
+    attendee = next((a for a in response if str(a.get("id")) == str(attendee_id)), None)
+    if not attendee:
+        return jsonify({"error": "Attendee not found"}), 404
+
+    # Get meal pickups from organizer notes
+    organizer_notes = attendee.get("organizerNotes", {})
+    meal_pickups = organizer_notes.get("mealPickups", {})
+
+    return jsonify({
+        "success": True,
+        "meal_pickups": meal_pickups
+    })
+
+
 # Waitlist-related API endpoints
 @app.route("/api/approve", methods=["POST"])
 def approve():

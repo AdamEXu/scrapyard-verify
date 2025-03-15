@@ -93,7 +93,19 @@
           }).showToast();
         });
 
+      // Global variable to store the current attendee ID
+      let currentAttendeeId = null;
+
       function showAttendeeInfo(attendeeId) {
+        console.log(
+          "Original input:",
+          document.getElementById("attendee-id").value
+        );
+        console.log("Processed ID:", attendeeId);
+
+        // Store the current attendee ID for later use
+        currentAttendeeId = attendeeId;
+
         if (!cachedAttendees) {
           Toastify({
             text: "Loading attendee data...",
@@ -112,13 +124,10 @@
           const mealForm = attendee.organizerNotes?.mealForm || {};
           const infoDisplay = document.getElementById("meal-info-display");
 
-          // Get meal pickup status
-          const mealPickups = attendee.organizerNotes?.mealPickups || {};
-
           // Get general dietary restrictions if any
           const dietaryRestrictions = attendee.dietaryRestrictions || "None";
 
-          // Create a more visually appealing display
+          // First, display the meal information without pickup status
           infoDisplay.innerHTML = `
             <div class="attendee-info">
               <h2>${
@@ -133,14 +142,8 @@
               <div class="meal-section" id="sunday-breakfast-section">
                 <div class="meal-header">
                   <h3>Saturday Breakfast (Donuts)</h3>
-                  <div class="meal-status ${
-                    mealPickups["sunday-breakfast"] ? "picked-up" : ""
-                  }">
-                    ${
-                      mealPickups["sunday-breakfast"]
-                        ? "PICKED UP ✓"
-                        : "Not picked up"
-                    }
+                  <div class="meal-status" id="sunday-breakfast-status">
+                    Loading...
                   </div>
                 </div>
                 <p>${
@@ -151,47 +154,31 @@
                     mealForm["sunday-breakfast"]?.["dietary-restrictions"] || []
                   ).join(", ") || "No dietary restrictions"
                 }</p>
-                ${
-                  mealPickups["sunday-breakfast"]
-                    ? `<button class="unpickup-button" data-meal="sunday-breakfast">Mark as Not Picked Up</button>`
-                    : `<button class="pickup-button" data-meal="sunday-breakfast">Mark as Picked Up</button>`
-                }
+                <div id="sunday-breakfast-button-container">
+                  <button class="pickup-button" data-meal="sunday-breakfast" disabled>Loading...</button>
+                </div>
               </div>
 
               <div class="meal-section" id="saturday-lunch-section">
                 <div class="meal-header">
                   <h3>Saturday Lunch (Pizza)</h3>
-                  <div class="meal-status ${
-                    mealPickups["saturday-lunch"] ? "picked-up" : ""
-                  }">
-                    ${
-                      mealPickups["saturday-lunch"]
-                        ? "PICKED UP ✓"
-                        : "Not picked up"
-                    }
+                  <div class="meal-status" id="saturday-lunch-status">
+                    Loading...
                   </div>
                 </div>
                 <p>${
                   mealForm["saturday-lunch"]?.["pizza"] || "Not selected"
                 }</p>
-                ${
-                  mealPickups["saturday-lunch"]
-                    ? `<button class="unpickup-button" data-meal="saturday-lunch">Mark as Not Picked Up</button>`
-                    : `<button class="pickup-button" data-meal="saturday-lunch">Mark as Picked Up</button>`
-                }
+                <div id="saturday-lunch-button-container">
+                  <button class="pickup-button" data-meal="saturday-lunch" disabled>Loading...</button>
+                </div>
               </div>
 
               <div class="meal-section" id="saturday-dinner-section">
                 <div class="meal-header">
                   <h3>Saturday Dinner (iniBurger)</h3>
-                  <div class="meal-status ${
-                    mealPickups["saturday-dinner"] ? "picked-up" : ""
-                  }">
-                    ${
-                      mealPickups["saturday-dinner"]
-                        ? "PICKED UP ✓"
-                        : "Not picked up"
-                    }
+                  <div class="meal-status" id="saturday-dinner-status">
+                    Loading...
                   </div>
                 </div>
                 <p>${
@@ -205,14 +192,15 @@
                 <p>Side: ${
                   mealForm["saturday-dinner"]?.["side"] || "Not selected"
                 }</p>
-                ${
-                  mealPickups["saturday-dinner"]
-                    ? `<button class="unpickup-button" data-meal="saturday-dinner">Mark as Not Picked Up</button>`
-                    : `<button class="pickup-button" data-meal="saturday-dinner">Mark as Picked Up</button>`
-                }
+                <div id="saturday-dinner-button-container">
+                  <button class="pickup-button" data-meal="saturday-dinner" disabled>Loading...</button>
+                </div>
               </div>
             </div>
           `;
+
+          // Now fetch the latest pickup data
+          fetchMealPickups(attendee.id);
 
           // Also show a toast notification
           Toastify({
@@ -242,14 +230,93 @@
         }
       }
 
+      // Function to fetch the latest meal pickup data
+      function fetchMealPickups(attendeeId) {
+        fetch(`/api/get-meal-pickups/${attendeeId}`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              updatePickupUI(data.meal_pickups);
+            } else {
+              console.error("Error fetching meal pickups:", data.error);
+              Toastify({
+                text: "Error loading pickup data",
+                duration: 3000,
+                close: true,
+                style: { background: "#f44336" },
+              }).showToast();
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            Toastify({
+              text: "Network error loading pickup data",
+              duration: 3000,
+              close: true,
+              style: { background: "#f44336" },
+            }).showToast();
+          });
+      }
+
+      // Function to update the UI with pickup data
+      function updatePickupUI(mealPickups) {
+        // Update Sunday Breakfast
+        updateMealSection("sunday-breakfast", mealPickups["sunday-breakfast"]);
+
+        // Update Saturday Lunch
+        updateMealSection("saturday-lunch", mealPickups["saturday-lunch"]);
+
+        // Update Saturday Dinner
+        updateMealSection("saturday-dinner", mealPickups["saturday-dinner"]);
+      }
+
+      // Helper function to update a single meal section
+      function updateMealSection(mealType, isPickedUp) {
+        const statusElement = document.getElementById(`${mealType}-status`);
+        const buttonContainer = document.getElementById(
+          `${mealType}-button-container`
+        );
+
+        if (statusElement && buttonContainer) {
+          if (isPickedUp) {
+            // Update status
+            statusElement.textContent = "PICKED UP ✓";
+            statusElement.classList.add("picked-up");
+
+            // Update button
+            buttonContainer.innerHTML = `<button class="unpickup-button" data-meal="${mealType}">Mark as Not Picked Up</button>`;
+          } else {
+            // Update status
+            statusElement.textContent = "Not picked up";
+            statusElement.classList.remove("picked-up");
+
+            // Update button
+            buttonContainer.innerHTML = `<button class="pickup-button" data-meal="${mealType}">Mark as Picked Up</button>`;
+          }
+        }
+      }
+
+      // Add function to extract ID from URL
+      function extractIdFromUrl(url) {
+        // Split by '/' and get the last segment
+        const parts = url.split("/");
+        return parts[parts.length - 1];
+      }
+
       // Handle form submission
       document
         .getElementById("meal-form-id")
         .addEventListener("submit", function (event) {
           event.preventDefault();
-          const attendeeId = document
+          const inputValue = document
             .getElementById("attendee-id")
             .value.trim();
+          console.log("Form submission - original input:", inputValue);
+          // Extract ID if it's a URL
+          const attendeeId = inputValue.includes("/")
+            ? extractIdFromUrl(inputValue)
+            : inputValue;
+          console.log("Form submission - extracted ID:", attendeeId);
           showAttendeeInfo(attendeeId);
         });
 
@@ -259,7 +326,13 @@
         .addEventListener("keypress", function (event) {
           if (event.key === "Enter") {
             event.preventDefault(); // Prevent form submission
-            const attendeeId = event.target.value.trim();
+            const inputValue = event.target.value.trim();
+            console.log("Keypress - original input:", inputValue);
+            // Extract ID if it's a URL
+            const attendeeId = inputValue.includes("/")
+              ? extractIdFromUrl(inputValue)
+              : inputValue;
+            console.log("Keypress - extracted ID:", attendeeId);
             showAttendeeInfo(attendeeId);
           }
         });
@@ -299,23 +372,8 @@
             .then((response) => response.json())
             .then((data) => {
               if (data.success) {
-                // Update the UI to show the meal as picked up
-                const statusElement =
-                  event.target.parentNode.querySelector(".meal-status");
-                statusElement.textContent = "PICKED UP ✓";
-                statusElement.classList.add("picked-up");
-
-                // Replace with unpickup button
-                const unpickupButton = document.createElement("button");
-                unpickupButton.className = "unpickup-button";
-                unpickupButton.setAttribute("data-meal", mealType);
-                unpickupButton.textContent = "Mark as Not Picked Up";
-
-                // Replace the pickup button with the unpickup button
-                event.target.parentNode.replaceChild(
-                  unpickupButton,
-                  event.target
-                );
+                // Fetch the latest pickup data instead of updating the UI directly
+                fetchMealPickups(attendeeId);
 
                 // Show success message
                 Toastify({
@@ -329,8 +387,7 @@
                 }).showToast();
               } else {
                 // Re-enable the button if there was an error
-                event.target.disabled = false;
-                event.target.textContent = "Mark as Picked Up";
+                updateMealSection(mealType, false); // Reset to not picked up state
 
                 // Show error message
                 Toastify({
@@ -344,8 +401,7 @@
             .catch((error) => {
               console.error("Error:", error);
               // Re-enable the button if there was an error
-              event.target.disabled = false;
-              event.target.textContent = "Mark as Picked Up";
+              updateMealSection(mealType, false); // Reset to not picked up state
 
               // Show error message
               Toastify({
@@ -385,23 +441,8 @@
             .then((response) => response.json())
             .then((data) => {
               if (data.success) {
-                // Update the UI to show the meal as not picked up
-                const statusElement =
-                  event.target.parentNode.querySelector(".meal-status");
-                statusElement.textContent = "Not picked up";
-                statusElement.classList.remove("picked-up");
-
-                // Replace with pickup button
-                const pickupButton = document.createElement("button");
-                pickupButton.className = "pickup-button";
-                pickupButton.setAttribute("data-meal", mealType);
-                pickupButton.textContent = "Mark as Picked Up";
-
-                // Replace the unpickup button with the pickup button
-                event.target.parentNode.replaceChild(
-                  pickupButton,
-                  event.target
-                );
+                // Fetch the latest pickup data instead of updating the UI directly
+                fetchMealPickups(attendeeId);
 
                 // Show success message
                 Toastify({
@@ -415,8 +456,7 @@
                 }).showToast();
               } else {
                 // Re-enable the button if there was an error
-                event.target.disabled = false;
-                event.target.textContent = "Mark as Not Picked Up";
+                updateMealSection(mealType, true); // Reset to picked up state
 
                 // Show error message
                 Toastify({
@@ -430,8 +470,7 @@
             .catch((error) => {
               console.error("Error:", error);
               // Re-enable the button if there was an error
-              event.target.disabled = false;
-              event.target.textContent = "Mark as Not Picked Up";
+              updateMealSection(mealType, true); // Reset to picked up state
 
               // Show error message
               Toastify({
